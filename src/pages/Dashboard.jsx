@@ -29,7 +29,7 @@ const LOCK_THRESHOLD = 70;
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { rules, toggleRule, addRule, deleteRule, resetAllRules, loading: rulesLoading } = useTradingRules();
+  const { rules, toggleRule, addRule, editRule, deleteRule, resetAllRules, loading: rulesLoading } = useTradingRules();
 
   // Phase: 'loading' | 'setup' | 'trading' | 'locked'
   const [phase, setPhase] = useState('loading');
@@ -444,7 +444,7 @@ export default function Dashboard() {
           <div className="lg:col-span-2 space-y-4">
             {/* Entry Rules */}
             <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-900/50">
-              <EntryRuleButtons rules={rules} onToggle={toggleRule} disabled={false} />
+              <EntryRuleButtons rules={rules} onToggle={toggleRule} onAdd={addRule} onDelete={deleteRule} onEdit={editRule} disabled={false} />
             </div>
 
             {/* Other Rules */}

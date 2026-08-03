@@ -72,11 +72,16 @@ export function useTradingRules() {
     setRules(prev => prev.filter(r => r.id !== ruleId));
   }, []);
 
+  const editRule = useCallback(async (ruleId, updates) => {
+    await TradingRule.update(ruleId, updates);
+    setRules(prev => prev.map(r => r.id === ruleId ? { ...r, ...updates } : r));
+  }, []);
+
   const resetAllRules = useCallback(async () => {
     const updates = rules.map(r => ({ id: r.id, enabled: false }));
     await bulkUpdateRules(updates);
     setRules(prev => prev.map(r => ({ ...r, enabled: false })));
   }, [rules]);
 
-  return { rules, setRules, toggleRule, addRule, deleteRule, resetAllRules, loading, reload: loadRules };
+  return { rules, setRules, toggleRule, addRule, editRule, deleteRule, resetAllRules, loading, reload: loadRules };
 }
