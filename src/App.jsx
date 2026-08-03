@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Reflection from './pages/Reflection';
 import Stats from './pages/Stats';
@@ -12,7 +12,7 @@ function AdminRoute({ children }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         <Route path="/" element={<AdminRoute><Dashboard /></AdminRoute>} />
         <Route path="/reflection" element={<AdminRoute><Reflection /></AdminRoute>} />
@@ -20,6 +20,6 @@ export default function App() {
         <Route path="/widget" element={<Widget />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }

@@ -338,7 +338,7 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => window.open('/widget', 'TradingWidget', 'width=280,height=520,resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no,status=no')}
+              onClick={() => window.open(window.location.origin + '/#/widget', 'TradingWidget', 'width=280,height=520,resizable=yes,scrollbars=no,toolbar=no,menubar=no,location=no,status=no')}
               className="p-1.5 rounded text-zinc-500 hover:text-teal-400 hover:bg-zinc-800/50 transition-colors"
               title="Pop out widget"
             >
