@@ -22,6 +22,56 @@ import { cn } from '@/lib/utils';
 
 const LOCK_THRESHOLD = 70;
 
+// Motivational phrases that flank the wheel when locked
+const LEFT_PHRASES = [
+  "Wait for confluence.",
+  "Patience pays.",
+  "No setup, no trade.",
+  "Protect your capital.",
+  "Less is more.",
+  "Wait for your pitch.",
+];
+const RIGHT_PHRASES = [
+  "Trust the process.",
+  "Discipline first.",
+  "Quality over quantity.",
+  "The market will wait.",
+  "Check your rules.",
+  "Earn the trade.",
+];
+
+function WheelPhrase({ side, isLocked }) {
+  const phrases = side === 'left' ? LEFT_PHRASES : RIGHT_PHRASES;
+  const [idx, setIdx] = useState(Math.floor(Math.random() * phrases.length));
+  const [fade, setFade] = useState(true);
+
+  useEffect(() => {
+    if (!isLocked) return;
+    const interval = setInterval(() => {
+      setFade(false);
+      setTimeout(() => { setIdx(prev => (prev + 1) % phrases.length); setFade(true); }, 250);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, [isLocked, phrases.length]);
+
+  if (!isLocked) return <div className="w-20 hidden md:block" />;
+
+  return (
+    <div className={cn(
+      'w-20 hidden md:flex items-center',
+      side === 'left' ? 'justify-end text-right' : 'justify-start text-left'
+    )}>
+      <p className={cn(
+        'text-[10px] leading-tight italic transition-opacity duration-300',
+        fade ? 'opacity-60' : 'opacity-0',
+        'text-zinc-500'
+      )}>
+        {phrases[idx]}
+      </p>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const { rules, toggleRule, addRule, editRule, deleteRule, resetAllRules, loading: rulesLoading } = useTradingRules();
@@ -72,6 +122,29 @@ export default function Dashboard() {
     const alpha = 0.03 + (executionScore / 100) * 0.12;
     const spread = 30 + (executionScore / 100) * 50;
     return { boxShadow: `inset 0 0 ${spread}px hsla(${hue}, 80%, 50%, ${alpha})` };
+  }, [executionScore]);
+
+  // Score color RGB for execute button (same ramp as wheel)
+  const scoreColorRgb = useMemo(() => {
+    const stops = [
+      { at: 0,   r: 239, g: 68,  b: 68  },
+      { at: 30,  r: 249, g: 115, b: 22  },
+      { at: 50,  r: 234, g: 179, b: 8   },
+      { at: 70,  r: 34,  g: 197, b: 94  },
+      { at: 80,  r: 45,  g: 212, b: 191 },
+      { at: 100, r: 45,  g: 212, b: 191 },
+    ];
+    let lower = stops[0], upper = stops[1];
+    for (let i = 0; i < stops.length - 1; i++) {
+      if (executionScore >= stops[i].at && executionScore <= stops[i + 1].at) {
+        lower = stops[i]; upper = stops[i + 1]; break;
+      }
+    }
+    const t = (executionScore - lower.at) / ((upper.at - lower.at) || 1);
+    const r = Math.round(lower.r + (upper.r - lower.r) * t);
+    const g = Math.round(lower.g + (upper.g - lower.g) * t);
+    const b = Math.round(lower.b + (upper.b - lower.b) * t);
+    return `${r}, ${g}, ${b}`;
   }, [executionScore]);
 
   // Init
@@ -230,56 +303,6 @@ export default function Dashboard() {
 
   // --- Render ---
 
-  // Motivational phrases that flank the wheel when locked
-  function WheelPhrase({ side, isLocked: locked }) {
-    const leftPhrases = [
-      "Wait for confluence.",
-      "Patience pays.",
-      "No setup, no trade.",
-      "Protect your capital.",
-      "Less is more.",
-      "Wait for your pitch.",
-    ];
-    const rightPhrases = [
-      "Trust the process.",
-      "Discipline first.",
-      "Quality over quantity.",
-      "The market will wait.",
-      "Check your rules.",
-      "Earn the trade.",
-    ];
-
-    const phrases = side === 'left' ? leftPhrases : rightPhrases;
-    const [idx, setIdx] = React.useState(Math.floor(Math.random() * phrases.length));
-    const [fade, setFade] = React.useState(true);
-
-    React.useEffect(() => {
-      if (!locked) return;
-      const interval = setInterval(() => {
-        setFade(false);
-        setTimeout(() => { setIdx(prev => (prev + 1) % phrases.length); setFade(true); }, 250);
-      }, 6000);
-      return () => clearInterval(interval);
-    }, [locked, phrases.length]);
-
-    if (!locked) return <div className="w-20 hidden md:block" />;
-
-    return (
-      <div className={cn(
-        'w-20 hidden md:flex items-center',
-        side === 'left' ? 'justify-end text-right' : 'justify-start text-left'
-      )}>
-        <p className={cn(
-          'text-[10px] leading-tight italic transition-opacity duration-300',
-          fade ? 'opacity-60' : 'opacity-0',
-          'text-zinc-500'
-        )}>
-          {phrases[idx]}
-        </p>
-      </div>
-    );
-  }
-
   if (phase === 'loading' || rulesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -298,29 +321,6 @@ export default function Dashboard() {
 
   // --- Trading Phase ---
   const totalR = trades.reduce((s, t) => s + (t.r_multiple || 0), 0);
-
-  // Score color for the execute button (same ramp as wheel)
-  const scoreColorRgb = useMemo(() => {
-    const stops = [
-      { at: 0,   r: 239, g: 68,  b: 68  },
-      { at: 30,  r: 249, g: 115, b: 22  },
-      { at: 50,  r: 234, g: 179, b: 8   },
-      { at: 70,  r: 34,  g: 197, b: 94  },
-      { at: 80,  r: 45,  g: 212, b: 191 },
-      { at: 100, r: 45,  g: 212, b: 191 },
-    ];
-    let lower = stops[0], upper = stops[1];
-    for (let i = 0; i < stops.length - 1; i++) {
-      if (executionScore >= stops[i].at && executionScore <= stops[i + 1].at) {
-        lower = stops[i]; upper = stops[i + 1]; break;
-      }
-    }
-    const t = (executionScore - lower.at) / ((upper.at - lower.at) || 1);
-    const r = Math.round(lower.r + (upper.r - lower.r) * t);
-    const g = Math.round(lower.g + (upper.g - lower.g) * t);
-    const b = Math.round(lower.b + (upper.b - lower.b) * t);
-    return `${r}, ${g}, ${b}`;
-  }, [executionScore]);
 
   return (
     <>
