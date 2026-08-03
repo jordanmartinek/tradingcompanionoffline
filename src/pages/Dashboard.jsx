@@ -230,6 +230,56 @@ export default function Dashboard() {
 
   // --- Render ---
 
+  // Motivational phrases that flank the wheel when locked
+  function WheelPhrase({ side, isLocked: locked }) {
+    const leftPhrases = [
+      "Wait for confluence.",
+      "Patience pays.",
+      "No setup, no trade.",
+      "Protect your capital.",
+      "Less is more.",
+      "Wait for your pitch.",
+    ];
+    const rightPhrases = [
+      "Trust the process.",
+      "Discipline first.",
+      "Quality over quantity.",
+      "The market will wait.",
+      "Check your rules.",
+      "Earn the trade.",
+    ];
+
+    const phrases = side === 'left' ? leftPhrases : rightPhrases;
+    const [idx, setIdx] = React.useState(Math.floor(Math.random() * phrases.length));
+    const [fade, setFade] = React.useState(true);
+
+    React.useEffect(() => {
+      if (!locked) return;
+      const interval = setInterval(() => {
+        setFade(false);
+        setTimeout(() => { setIdx(prev => (prev + 1) % phrases.length); setFade(true); }, 250);
+      }, 6000);
+      return () => clearInterval(interval);
+    }, [locked, phrases.length]);
+
+    if (!locked) return <div className="w-20 hidden md:block" />;
+
+    return (
+      <div className={cn(
+        'w-20 hidden md:flex items-center',
+        side === 'left' ? 'justify-end text-right' : 'justify-start text-left'
+      )}>
+        <p className={cn(
+          'text-[10px] leading-tight italic transition-opacity duration-300',
+          fade ? 'opacity-60' : 'opacity-0',
+          'text-zinc-500'
+        )}>
+          {phrases[idx]}
+        </p>
+      </div>
+    );
+  }
+
   if (phase === 'loading' || rulesLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -248,6 +298,29 @@ export default function Dashboard() {
 
   // --- Trading Phase ---
   const totalR = trades.reduce((s, t) => s + (t.r_multiple || 0), 0);
+
+  // Score color for the execute button (same ramp as wheel)
+  const scoreColorRgb = useMemo(() => {
+    const stops = [
+      { at: 0,   r: 239, g: 68,  b: 68  },
+      { at: 30,  r: 249, g: 115, b: 22  },
+      { at: 50,  r: 234, g: 179, b: 8   },
+      { at: 70,  r: 34,  g: 197, b: 94  },
+      { at: 80,  r: 45,  g: 212, b: 191 },
+      { at: 100, r: 45,  g: 212, b: 191 },
+    ];
+    let lower = stops[0], upper = stops[1];
+    for (let i = 0; i < stops.length - 1; i++) {
+      if (executionScore >= stops[i].at && executionScore <= stops[i + 1].at) {
+        lower = stops[i]; upper = stops[i + 1]; break;
+      }
+    }
+    const t = (executionScore - lower.at) / ((upper.at - lower.at) || 1);
+    const r = Math.round(lower.r + (upper.r - lower.r) * t);
+    const g = Math.round(lower.g + (upper.g - lower.g) * t);
+    const b = Math.round(lower.b + (upper.b - lower.b) * t);
+    return `${r}, ${g}, ${b}`;
+  }, [executionScore]);
 
   return (
     <>
@@ -297,35 +370,43 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {/* Wheel — Hero element */}
-        <div className="flex flex-col items-center mb-6">
-          <div className="mb-3">
-            <EmaStatusToggle direction={emaDirection} onChange={setEmaDirection} />
-          </div>
+        {/* Wheel — Hero element with motivational phrases */}
+        <div className="flex items-center justify-center gap-4 mb-6">
+          {/* Left phrase */}
+          <WheelPhrase side="left" isLocked={isLocked} />
 
-          <DisciplineWheel
-            maxTrades={session?.max_trades || 3}
-            trades={trades}
-            isLocked={isLocked}
-            executionScore={executionScore}
-            emaDirection={emaDirection}
-            onSlotClick={handleSlotClick}
-          />
+          <div className="flex flex-col items-center">
+            <div className="mb-3">
+              <EmaStatusToggle direction={emaDirection} onChange={setEmaDirection} />
+            </div>
 
-          {/* Inline stats below wheel */}
-          <div className="flex items-center gap-5 mt-4 text-xs font-mono tabular-nums">
-            <span className={cn(cumulativePnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>
-              ${cumulativePnl >= 0 ? '+' : ''}{cumulativePnl.toFixed(0)}
-            </span>
-            <span className={cn(totalR >= 0 ? 'text-emerald-400/70' : 'text-red-400/70')}>
-              {totalR >= 0 ? '+' : ''}{totalR.toFixed(1)}R
-            </span>
-            {dailyLossLimit > 0 && (
-              <span className={cn(lossLimitHit ? 'text-red-400' : 'text-zinc-600')}>
-                Limit: -${dailyLossLimit}
+            <DisciplineWheel
+              maxTrades={session?.max_trades || 3}
+              trades={trades}
+              isLocked={isLocked}
+              executionScore={executionScore}
+              emaDirection={emaDirection}
+              onSlotClick={handleSlotClick}
+            />
+
+            {/* Inline stats below wheel */}
+            <div className="flex items-center gap-5 mt-4 text-xs font-mono tabular-nums">
+              <span className={cn(cumulativePnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>
+                ${cumulativePnl >= 0 ? '+' : ''}{cumulativePnl.toFixed(0)}
               </span>
-            )}
+              <span className={cn(totalR >= 0 ? 'text-emerald-400/70' : 'text-red-400/70')}>
+                {totalR >= 0 ? '+' : ''}{totalR.toFixed(1)}R
+              </span>
+              {dailyLossLimit > 0 && (
+                <span className={cn(lossLimitHit ? 'text-red-400' : 'text-zinc-600')}>
+                  Limit: -${dailyLossLimit}
+                </span>
+              )}
+            </div>
           </div>
+
+          {/* Right phrase */}
+          <WheelPhrase side="right" isLocked={isLocked} />
         </div>
 
         {/* Status line */}
@@ -352,17 +433,28 @@ export default function Dashboard() {
           <OtherRulesDropdown rules={rules} onToggle={toggleRule} onAdd={addRule} onDelete={deleteRule} />
         </div>
 
-        {/* Execute Button */}
-        <Button
+        {/* Execute Button — color shifts with score */}
+        <button
           className={cn(
-            'w-full h-12 text-sm font-bold transition-all',
-            isLocked && 'opacity-40'
+            'w-full h-12 rounded-md text-sm font-bold transition-all duration-500',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
+            isLocked
+              ? 'cursor-not-allowed'
+              : 'hover:brightness-110 active:scale-[0.98] shadow-lg'
           )}
           disabled={isLocked}
-          onClick={() => setShowExecuteDialog(true)}
+          onClick={() => !isLocked && setShowExecuteDialog(true)}
+          style={{
+            backgroundColor: isLocked
+              ? `rgba(${scoreColorRgb}, 0.15)`
+              : `rgb(${scoreColorRgb})`,
+            color: isLocked ? `rgb(${scoreColorRgb})` : '#09090b',
+            boxShadow: isLocked ? 'none' : `0 4px 20px rgba(${scoreColorRgb}, 0.3)`,
+            border: isLocked ? `1px solid rgba(${scoreColorRgb}, 0.3)` : 'none',
+          }}
         >
           {isLocked ? 'Locked' : 'Execute Trade'}
-        </Button>
+        </button>
 
         {/* Weekly goal — subtle at bottom */}
         <div className="mt-6 opacity-80">
