@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TradingRule, bulkUpdateRules } from '@/api/db';
+import { notifyChange, onSyncChange } from '@/lib/sync';
 
 const DEFAULT_RULES = [
   { title: 'EMA Alignment', description: 'Price respecting EMA structure', category: 'entry', order: 1 },
@@ -41,6 +42,16 @@ export function useTradingRules() {
     loadRules();
   }, [loadRules]);
 
+  // Listen for cross-window rule changes and reload
+  useEffect(() => {
+    const cleanup = onSyncChange((msg) => {
+      if (msg.type === 'rules' || msg.type === 'trading_rules') {
+        loadRules();
+      }
+    });
+    return cleanup;
+  }, [loadRules]);
+
   const toggleRule = useCallback(async (ruleId) => {
     setRules(prev => {
       const updated = prev.map(r => 
@@ -52,6 +63,7 @@ export function useTradingRules() {
     const rule = rules.find(r => r.id === ruleId);
     if (rule) {
       await TradingRule.update(ruleId, { enabled: !rule.enabled });
+      notifyChange('rules');
     }
   }, [rules]);
 
@@ -65,22 +77,26 @@ export function useTradingRules() {
       order: maxOrder + 1,
     });
     setRules(prev => [...prev, newRule]);
+    notifyChange('rules');
   }, [rules]);
 
   const deleteRule = useCallback(async (ruleId) => {
     await TradingRule.delete(ruleId);
     setRules(prev => prev.filter(r => r.id !== ruleId));
+    notifyChange('rules');
   }, []);
 
   const editRule = useCallback(async (ruleId, updates) => {
     await TradingRule.update(ruleId, updates);
     setRules(prev => prev.map(r => r.id === ruleId ? { ...r, ...updates } : r));
+    notifyChange('rules');
   }, []);
 
   const resetAllRules = useCallback(async () => {
     const updates = rules.map(r => ({ id: r.id, enabled: false }));
     await bulkUpdateRules(updates);
     setRules(prev => prev.map(r => ({ ...r, enabled: false })));
+    notifyChange('rules');
   }, [rules]);
 
   return { rules, setRules, toggleRule, addRule, editRule, deleteRule, resetAllRules, loading, reload: loadRules };

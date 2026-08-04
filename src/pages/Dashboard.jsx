@@ -4,6 +4,7 @@ import { TradingSession, Trade, WeeklyGoal, getOrCreateDNA } from '@/api/db';
 import { useTradingRules } from '@/hooks/useTradingRules';
 import { getWeekRange, isAPlusTrade } from '@/shared/weeklyGoal';
 import { generateSessionSummary } from '@/shared/coachingEngine';
+import { onSyncChange } from '@/lib/sync';
 
 import SessionSetup from '@/components/trading/SessionSetup';
 import DisciplineWheel from '@/components/trading/DisciplineWheel';
@@ -182,6 +183,21 @@ export default function Dashboard() {
       setPhase('setup');
     }
     init();
+  }, []);
+
+  // Listen for cross-window changes (trades from widget, rules toggled elsewhere)
+  useEffect(() => {
+    const cleanup = onSyncChange(async (msg) => {
+      if (msg.type === 'trades' || msg.type === 'trading_rules' || msg.type === 'rules') {
+        // Reload trades from localStorage
+        const activeId = localStorage.getItem('tcai_active_session');
+        if (activeId) {
+          const sessionTrades = await Trade.list({ session_id: activeId });
+          setTrades(sessionTrades.sort((a, b) => (a.slot_index || 0) - (b.slot_index || 0)));
+        }
+      }
+    });
+    return cleanup;
   }, []);
 
   const loadWeeklyData = useCallback(async () => {

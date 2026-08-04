@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTradingRules } from '@/hooks/useTradingRules';
 import { TradingSession, Trade } from '@/api/db';
+import { notifyChange } from '@/lib/sync';
 import { cn } from '@/lib/utils';
 
 const UNLOCK_THRESHOLD = 75;
@@ -83,6 +84,9 @@ export default function Widget() {
     // Reset rules immediately so next trade requires re-checking
     await resetAllRules();
 
+    // Notify main window about the new trade
+    notifyChange('trades');
+
     // Show the quick-log form
     setTradeResult('win');
     setTradeR('');
@@ -109,6 +113,9 @@ export default function Widget() {
           : t
       ));
     }
+
+    // Notify main window about the trade update
+    notifyChange('trades');
 
     setTradePhase('done');
     setPendingTradeId(null);
