@@ -18,6 +18,7 @@ import WeeklyGoalBar from '@/components/trading/WeeklyGoalBar';
 import EndSessionDialog from '@/components/trading/EndSessionDialog';
 import LockedScreen from '@/components/trading/LockedScreen';
 import EmergencyIntervention from '@/components/trading/EmergencyIntervention';
+import TradingViewChart from '@/components/trading/TradingViewChart';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -343,9 +344,9 @@ export default function Dashboard() {
       <div className="screen-glow animate-pulse-glow" style={glowStyle} />
       <EmergencyIntervention open={showEmergency} onClose={() => setShowEmergency(false)} />
 
-      <div className="min-h-screen flex flex-col max-w-2xl mx-auto px-4 py-5">
+      <div className="h-screen flex flex-col overflow-hidden">
         {/* Header bar */}
-        <header className="flex items-center justify-between mb-5">
+        <header className="flex items-center justify-between px-4 py-2 border-b border-zinc-800/30 flex-shrink-0">
           <div className="flex items-center gap-3">
             <SessionTimer startTime={session?.start_time} />
             <span className="text-[10px] text-zinc-600 uppercase tracking-wider hidden sm:inline">
@@ -386,106 +387,107 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {/* Wheel — Hero element with motivational phrases */}
-        <div className="flex items-center justify-center gap-4 mb-6">
-          {/* Left phrase */}
-          <WheelPhrase side="left" isLocked={isLocked} />
+        {/* Main content: Chart left, Controls right */}
+        <div className="flex-1 flex min-h-0">
+          {/* TradingView Chart — left panel */}
+          <TradingViewChart className="flex-1 min-w-0 border-r border-zinc-800/30" />
 
-          <div className="flex flex-col items-center">
-            <div className="mb-3">
-              <EmaStatusToggle direction={emaDirection} onChange={setEmaDirection} />
+          {/* Controls panel — right side, scrollable */}
+          <div className="w-80 lg:w-96 flex-shrink-0 overflow-y-auto px-4 py-4 space-y-4">
+            {/* Wheel with motivational phrases */}
+            <div className="flex items-center justify-center gap-2">
+              <WheelPhrase side="left" isLocked={isLocked} />
+
+              <div className="flex flex-col items-center">
+                <div className="mb-2">
+                  <EmaStatusToggle direction={emaDirection} onChange={setEmaDirection} />
+                </div>
+
+                <DisciplineWheel
+                  maxTrades={session?.max_trades || 3}
+                  trades={trades}
+                  isLocked={isLocked}
+                  executionScore={executionScore}
+                  emaDirection={emaDirection}
+                  onSlotClick={handleSlotClick}
+                />
+
+                {/* Inline stats */}
+                <div className="flex items-center gap-4 mt-3 text-xs font-mono tabular-nums">
+                  <span className={cn(cumulativePnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>
+                    ${cumulativePnl >= 0 ? '+' : ''}{cumulativePnl.toFixed(0)}
+                  </span>
+                  <span className={cn(totalR >= 0 ? 'text-emerald-400/70' : 'text-red-400/70')}>
+                    {totalR >= 0 ? '+' : ''}{totalR.toFixed(1)}R
+                  </span>
+                  {dailyLossLimit > 0 && (
+                    <span className={cn(lossLimitHit ? 'text-red-400' : 'text-zinc-600')}>
+                      -{dailyLossLimit}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <WheelPhrase side="right" isLocked={isLocked} />
             </div>
 
-            <DisciplineWheel
-              maxTrades={session?.max_trades || 3}
-              trades={trades}
-              isLocked={isLocked}
-              executionScore={executionScore}
-              emaDirection={emaDirection}
-              onSlotClick={handleSlotClick}
-            />
+            {/* Status line */}
+            <div className={cn(
+              'text-center text-[11px] font-medium py-1 rounded transition-all',
+              lossLimitHit ? 'text-red-300 bg-red-500/5' :
+              allSlotsFilled ? 'text-amber-300 bg-amber-500/5' :
+              isLocked ? 'text-zinc-500' :
+              'text-teal-300 bg-teal-500/5'
+            )}>
+              {lossLimitHit ? 'Loss limit hit.'
+                : allSlotsFilled ? 'All slots filled.'
+                : isLocked ? `Check ${Math.max(0, Math.ceil(totalEntryCount * 0.7) - enabledEntryCount)} more to unlock`
+                : 'Unlocked'}
+            </div>
 
-            {/* Inline stats below wheel */}
-            <div className="flex items-center gap-5 mt-4 text-xs font-mono tabular-nums">
-              <span className={cn(cumulativePnl >= 0 ? 'text-emerald-400' : 'text-red-400')}>
-                ${cumulativePnl >= 0 ? '+' : ''}{cumulativePnl.toFixed(0)}
-              </span>
-              <span className={cn(totalR >= 0 ? 'text-emerald-400/70' : 'text-red-400/70')}>
-                {totalR >= 0 ? '+' : ''}{totalR.toFixed(1)}R
-              </span>
-              {dailyLossLimit > 0 && (
-                <span className={cn(lossLimitHit ? 'text-red-400' : 'text-zinc-600')}>
-                  Limit: -${dailyLossLimit}
-                </span>
+            {/* Entry Rules */}
+            <EntryRuleButtons rules={rules} onToggle={toggleRule} onAdd={addRule} onDelete={deleteRule} onEdit={editRule} disabled={false} />
+
+            {/* Other Rules */}
+            <OtherRulesDropdown rules={rules} onToggle={toggleRule} onAdd={addRule} onDelete={deleteRule} />
+
+            {/* Execute Button */}
+            <button
+              className={cn(
+                'w-full h-11 rounded-md text-sm font-bold transition-all duration-500',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
+                isLocked
+                  ? 'cursor-not-allowed'
+                  : 'hover:brightness-110 active:scale-[0.98] shadow-lg'
               )}
+              disabled={isLocked}
+              onClick={() => !isLocked && setShowExecuteDialog(true)}
+              style={{
+                backgroundColor: isLocked ? `rgba(${scoreColorRgb}, 0.15)` : `rgb(${scoreColorRgb})`,
+                color: isLocked ? `rgb(${scoreColorRgb})` : '#09090b',
+                boxShadow: isLocked ? 'none' : `0 4px 20px rgba(${scoreColorRgb}, 0.3)`,
+                border: isLocked ? `1px solid rgba(${scoreColorRgb}, 0.3)` : 'none',
+              }}
+            >
+              {isLocked ? 'Locked' : 'Execute Trade'}
+            </button>
+
+            {/* Weekly goal */}
+            <div className="opacity-70">
+              <WeeklyGoalBar
+                aPlusCount={weeklyData.aPlusCount}
+                target={weeklyData.target}
+                avgScore={weeklyData.avgScore}
+                onEditTarget={handleEditWeeklyTarget}
+              />
             </div>
+
+            {/* Affirmation */}
+            {session?.daily_affirmation && (
+              <p className="text-center text-[10px] text-zinc-600 italic">{session.daily_affirmation}</p>
+            )}
           </div>
-
-          {/* Right phrase */}
-          <WheelPhrase side="right" isLocked={isLocked} />
         </div>
-
-        {/* Status line */}
-        <div className={cn(
-          'text-center text-xs font-medium py-1.5 mb-5 rounded transition-all',
-          lossLimitHit ? 'text-red-300 bg-red-500/5' :
-          allSlotsFilled ? 'text-amber-300 bg-amber-500/5' :
-          isLocked ? 'text-zinc-500' :
-          'text-teal-300 bg-teal-500/5'
-        )}>
-          {lossLimitHit ? 'Loss limit hit — stop trading.'
-            : allSlotsFilled ? 'All slots filled.'
-            : isLocked ? `Check ${Math.max(0, Math.ceil(totalEntryCount * 0.7) - enabledEntryCount)} more rule(s) to unlock`
-            : 'Unlocked — Execute with discipline'}
-        </div>
-
-        {/* Entry Rules */}
-        <div className="mb-4">
-          <EntryRuleButtons rules={rules} onToggle={toggleRule} onAdd={addRule} onDelete={deleteRule} onEdit={editRule} disabled={false} />
-        </div>
-
-        {/* Other Rules (collapsed) */}
-        <div className="mb-5">
-          <OtherRulesDropdown rules={rules} onToggle={toggleRule} onAdd={addRule} onDelete={deleteRule} />
-        </div>
-
-        {/* Execute Button — color shifts with score */}
-        <button
-          className={cn(
-            'w-full h-12 rounded-md text-sm font-bold transition-all duration-500',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950',
-            isLocked
-              ? 'cursor-not-allowed'
-              : 'hover:brightness-110 active:scale-[0.98] shadow-lg'
-          )}
-          disabled={isLocked}
-          onClick={() => !isLocked && setShowExecuteDialog(true)}
-          style={{
-            backgroundColor: isLocked
-              ? `rgba(${scoreColorRgb}, 0.15)`
-              : `rgb(${scoreColorRgb})`,
-            color: isLocked ? `rgb(${scoreColorRgb})` : '#09090b',
-            boxShadow: isLocked ? 'none' : `0 4px 20px rgba(${scoreColorRgb}, 0.3)`,
-            border: isLocked ? `1px solid rgba(${scoreColorRgb}, 0.3)` : 'none',
-          }}
-        >
-          {isLocked ? 'Locked' : 'Execute Trade'}
-        </button>
-
-        {/* Weekly goal — subtle at bottom */}
-        <div className="mt-6 opacity-80">
-          <WeeklyGoalBar
-            aPlusCount={weeklyData.aPlusCount}
-            target={weeklyData.target}
-            avgScore={weeklyData.avgScore}
-            onEditTarget={handleEditWeeklyTarget}
-          />
-        </div>
-
-        {/* Affirmation */}
-        {session?.daily_affirmation && (
-          <p className="text-center text-[11px] text-zinc-600 italic mt-4">{session.daily_affirmation}</p>
-        )}
       </div>
 
       {/* Dialogs */}
