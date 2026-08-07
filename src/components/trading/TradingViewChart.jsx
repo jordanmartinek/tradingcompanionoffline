@@ -32,7 +32,7 @@ export default function TradingViewChart({ className }) {
       autosize: true,
       symbol: symbol,
       interval: interval,
-      timezone: 'Etc/UTC',
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       theme: 'dark',
       style: '1',
       locale: 'en',
