@@ -14,6 +14,8 @@ export default function SessionSetup({ onBeginSession }) {
   const [dailyAffirmation, setDailyAffirmation] = useState(affirmations[0]);
   const [maxTrades, setMaxTrades] = useState(3);
   const [dailyLossLimit, setDailyLossLimit] = useState(0);
+  const [maxSessionMinutes, setMaxSessionMinutes] = useState(180);
+  const [lossCooldownSeconds, setLossCooldownSeconds] = useState(300);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -23,6 +25,8 @@ export default function SessionSetup({ onBeginSession }) {
       daily_affirmation: dailyAffirmation,
       max_trades: maxTrades,
       daily_loss_limit: dailyLossLimit,
+      max_session_minutes: maxSessionMinutes,
+      loss_cooldown_seconds: lossCooldownSeconds,
     });
   };
 
@@ -93,6 +97,36 @@ export default function SessionSetup({ onBeginSession }) {
               onChange={(e) => setDailyLossLimit(Number(e.target.value) || 0)}
             />
             <p className="text-[11px] text-zinc-600">Locks trading when cumulative PnL hits this. 0 = off.</p>
+          </div>
+
+          {/* Session Time Limit */}
+          <div className="space-y-1.5">
+            <Label htmlFor="sessionTime">Max Session Length (minutes)</Label>
+            <Input
+              id="sessionTime"
+              type="number"
+              min={15}
+              max={480}
+              step={15}
+              value={maxSessionMinutes}
+              onChange={(e) => setMaxSessionMinutes(Number(e.target.value) || 180)}
+            />
+            <p className="text-[11px] text-zinc-600">Session auto-ends when this time is reached. No override.</p>
+          </div>
+
+          {/* Loss Cooldown */}
+          <div className="space-y-1.5">
+            <Label htmlFor="cooldown">Post-Loss Cooldown (seconds)</Label>
+            <Input
+              id="cooldown"
+              type="number"
+              min={0}
+              max={600}
+              step={30}
+              value={lossCooldownSeconds}
+              onChange={(e) => setLossCooldownSeconds(Number(e.target.value) || 0)}
+            />
+            <p className="text-[11px] text-zinc-600">After logging a loss, rules are hidden for this long. 0 = off.</p>
           </div>
 
           <Button type="submit" className="w-full h-11 text-sm font-semibold mt-2">

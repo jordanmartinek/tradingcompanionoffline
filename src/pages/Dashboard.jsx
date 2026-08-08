@@ -97,6 +97,13 @@ export default function Dashboard() {
   const [speedWarning, setSpeedWarning] = useState(null);
   const ruleCheckTimesRef = React.useRef([]);
 
+  // Anti-revenge cooldown
+  const [cooldownUntil, setCooldownUntil] = useState(null);
+  const [cooldownLeft, setCooldownLeft] = useState(0);
+
+  // Session auto-end
+  const [sessionTimeLeft, setSessionTimeLeft] = useState(null);
+
   // Computed
   const entryRules = useMemo(() => rules.filter(r => r.category === 'entry'), [rules]);
   const enabledEntryCount = useMemo(() => entryRules.filter(r => r.enabled).length, [entryRules]);
@@ -114,7 +121,8 @@ export default function Dashboard() {
     const requiredEntryRules = entryRules.filter(r => r.required);
     return requiredEntryRules.length === 0 || requiredEntryRules.every(r => r.enabled);
   }, [entryRules]);
-  const isLocked = executionScore < LOCK_THRESHOLD || !requiredRulesMet || lossLimitHit || allSlotsFilled;
+  const isCoolingDown = cooldownLeft > 0;
+  const isLocked = executionScore < LOCK_THRESHOLD || !requiredRulesMet || lossLimitHit || allSlotsFilled || isCoolingDown;
 
   // Screen-edge glow
   const glowStyle = useMemo(() => {
@@ -265,6 +273,39 @@ export default function Dashboard() {
     prevEnabledCountRef.current = enabledEntryCount;
   }, [enabledEntryCount]);
 
+  // Cooldown countdown timer
+  useEffect(() => {
+    if (!cooldownUntil) return;
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
+      setCooldownLeft(remaining);
+      if (remaining <= 0) {
+        setCooldownUntil(null);
+        setCooldownLeft(0);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [cooldownUntil]);
+
+  // Session auto-end timer
+  useEffect(() => {
+    if (phase !== 'trading' || !session?.start_time || !session?.max_session_minutes) return;
+    const maxMs = session.max_session_minutes * 60 * 1000;
+    const endTime = new Date(session.start_time).getTime() + maxMs;
+
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, endTime - Date.now());
+      setSessionTimeLeft(remaining);
+      if (remaining <= 0) {
+        clearInterval(interval);
+        // Auto-end the session
+        handleEndSession();
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [phase, session?.start_time, session?.max_session_minutes]);
+
   const loadWeeklyData = useCallback(async () => {
     try {
       const { weekStart, weekEnd } = getWeekRange();
@@ -327,6 +368,14 @@ export default function Dashboard() {
     } else {
       const newTrade = await Trade.create({ ...tradeData, session_id: session.id });
       setTrades(prev => [...prev, newTrade]);
+
+      // Trigger cooldown if this was a loss
+      const cooldownSecs = session?.loss_cooldown_seconds || 0;
+      if (tradeData.result === 'loss' && cooldownSecs > 0) {
+        const until = Date.now() + cooldownSecs * 1000;
+        setCooldownUntil(until);
+        setCooldownLeft(cooldownSecs);
+      }
     }
     if (!existing) await resetAllRules();
     setShowTradeDetail(false);
@@ -416,6 +465,16 @@ export default function Dashboard() {
             {streak > 0 && (
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 font-medium" title={`${streak} disciplined sessions in a row`}>
                 {'\uD83D\uDD25'} {streak}
+              </span>
+            )}
+            {sessionTimeLeft != null && session?.max_session_minutes > 0 && (
+              <span className={cn(
+                'text-[10px] font-mono tabular-nums px-1.5 py-0.5 rounded',
+                sessionTimeLeft < 300000 ? 'bg-red-500/10 text-red-400' :
+                sessionTimeLeft < 900000 ? 'bg-amber-500/10 text-amber-300' :
+                'text-zinc-500'
+              )} title="Time remaining in session">
+                {Math.floor(sessionTimeLeft / 60000)}:{((Math.floor(sessionTimeLeft / 1000) % 60)).toString().padStart(2, '0')} left
               </span>
             )}
             <span className="text-[10px] text-zinc-600 uppercase tracking-wider hidden sm:inline">
@@ -510,6 +569,7 @@ export default function Dashboard() {
             )}>
               {lossLimitHit ? 'Loss limit hit.'
                 : allSlotsFilled ? 'All slots filled.'
+                : isCoolingDown ? `Cooldown: ${Math.floor(cooldownLeft / 60)}:${(cooldownLeft % 60).toString().padStart(2, '0')} — breathe`
                 : !requiredRulesMet ? 'Required rules not met'
                 : isLocked ? `Check ${Math.max(0, Math.ceil(totalEntryCount * 0.7) - enabledEntryCount)} more to unlock`
                 : 'Unlocked'}
@@ -522,8 +582,25 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Entry Rules */}
-            <EntryRuleButtons rules={rules} onToggle={toggleRule} onAdd={addRule} onDelete={deleteRule} onEdit={editRule} onReorder={reorderRules} disabled={false} />
+            {/* Cooldown overlay — hides rules after a loss */}
+            {isCoolingDown ? (
+              <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                <div className="w-16 h-16 rounded-full border-2 border-red-500/40 bg-red-500/10 flex items-center justify-center">
+                  <span className="text-xl font-mono font-bold text-red-400 tabular-nums">
+                    {Math.floor(cooldownLeft / 60)}:{(cooldownLeft % 60).toString().padStart(2, '0')}
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 text-center max-w-[200px]">
+                  Post-loss cooldown active. Step back, breathe, and reset your mindset.
+                </p>
+                <p className="text-[10px] text-zinc-600 italic">Rules will reappear when the timer ends.</p>
+              </div>
+            ) : (
+              <>
+                {/* Entry Rules */}
+                <EntryRuleButtons rules={rules} onToggle={toggleRule} onAdd={addRule} onDelete={deleteRule} onEdit={editRule} onReorder={reorderRules} disabled={false} />
+              </>
+            )}
 
             {/* Other Rules */}
             <OtherRulesDropdown rules={rules} onToggle={toggleRule} onAdd={addRule} onDelete={deleteRule} />
