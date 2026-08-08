@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-export default function EntryRuleButtons({ rules, onToggle, onAdd, onDelete, onEdit, disabled }) {
+export default function EntryRuleButtons({ rules, onToggle, onAdd, onDelete, onEdit, onReorder, disabled }) {
   const entryRules = rules.filter(r => r.category === 'entry');
   const enabledCount = entryRules.filter(r => r.enabled).length;
   const totalCount = entryRules.length;
@@ -174,9 +174,37 @@ export default function EntryRuleButtons({ rules, onToggle, onAdd, onDelete, onE
               </button>
             )}
 
-            {/* Edit/Delete/Required controls — show on hover */}
+            {/* Reorder/Required/Edit/Delete controls — show on hover */}
             {editingId !== rule.id && (
               <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity">
+                {/* Move up */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onReorder(rule.id, 'up');
+                  }}
+                  className="p-1 rounded text-zinc-500 hover:text-zinc-200 hover:bg-zinc-700/50 transition-colors"
+                  title="Move up"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+                  </svg>
+                </button>
+                {/* Move down */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onReorder(rule.id, 'down');
+                  }}
+                  className="p-1 rounded text-zinc-500 hover:text-zinc-200 hover:bg-zinc-700/50 transition-colors"
+                  title="Move down"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {/* Divider */}
+                <div className="w-px h-3 bg-zinc-700 mx-0.5" />
                 {/* Toggle required */}
                 <button
                   onClick={(e) => {

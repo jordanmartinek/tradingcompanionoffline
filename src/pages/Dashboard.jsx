@@ -76,7 +76,7 @@ function WheelPhrase({ side, isLocked }) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { rules, toggleRule, addRule, editRule, deleteRule, resetAllRules, loading: rulesLoading } = useTradingRules();
+  const { rules, toggleRule, addRule, editRule, deleteRule, reorderRules, resetAllRules, loading: rulesLoading } = useTradingRules();
 
   const [phase, setPhase] = useState('loading');
   const [session, setSession] = useState(null);
@@ -451,7 +451,7 @@ export default function Dashboard() {
             </div>
 
             {/* Entry Rules */}
-            <EntryRuleButtons rules={rules} onToggle={toggleRule} onAdd={addRule} onDelete={deleteRule} onEdit={editRule} disabled={false} />
+            <EntryRuleButtons rules={rules} onToggle={toggleRule} onAdd={addRule} onDelete={deleteRule} onEdit={editRule} onReorder={reorderRules} disabled={false} />
 
             {/* Other Rules */}
             <OtherRulesDropdown rules={rules} onToggle={toggleRule} onAdd={addRule} onDelete={deleteRule} />

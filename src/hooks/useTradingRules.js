@@ -99,5 +99,38 @@ export function useTradingRules() {
     notifyChange('rules');
   }, [rules]);
 
-  return { rules, setRules, toggleRule, addRule, editRule, deleteRule, resetAllRules, loading, reload: loadRules };
+  const reorderRules = useCallback(async (ruleId, direction) => {
+    // direction: 'up' or 'down'
+    const category = rules.find(r => r.id === ruleId)?.category;
+    if (!category) return;
+
+    // Get rules of the same category, sorted by order
+    const categoryRules = rules.filter(r => r.category === category).sort((a, b) => (a.order || 0) - (b.order || 0));
+    const idx = categoryRules.findIndex(r => r.id === ruleId);
+    if (idx === -1) return;
+    if (direction === 'up' && idx === 0) return;
+    if (direction === 'down' && idx === categoryRules.length - 1) return;
+
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+
+    // Swap order values
+    const orderA = categoryRules[idx].order || idx;
+    const orderB = categoryRules[swapIdx].order || swapIdx;
+
+    await TradingRule.update(categoryRules[idx].id, { order: orderB });
+    await TradingRule.update(categoryRules[swapIdx].id, { order: orderA });
+
+    setRules(prev => {
+      const updated = prev.map(r => {
+        if (r.id === categoryRules[idx].id) return { ...r, order: orderB };
+        if (r.id === categoryRules[swapIdx].id) return { ...r, order: orderA };
+        return r;
+      });
+      return updated.sort((a, b) => (a.order || 0) - (b.order || 0));
+    });
+
+    notifyChange('rules');
+  }, [rules]);
+
+  return { rules, setRules, toggleRule, addRule, editRule, deleteRule, reorderRules, resetAllRules, loading, reload: loadRules };
 }
