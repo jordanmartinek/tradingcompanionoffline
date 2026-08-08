@@ -390,19 +390,31 @@ export default function Dashboard() {
     const endTime = new Date().toISOString();
     const lockUntil = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
 
+    // Calculate session execution score from actual trade rule_compliance data
+    // (not from current checkbox state, which resets after each trade)
+    let sessionExecScore = 0;
+    if (trades.length > 0) {
+      const tradeScores = trades.map(t => {
+        if (!t.rule_compliance || t.rule_compliance.length === 0) return 0;
+        const followed = t.rule_compliance.filter(r => r.followed).length;
+        return Math.round((followed / t.rule_compliance.length) * 100);
+      });
+      sessionExecScore = Math.round(tradeScores.reduce((a, b) => a + b, 0) / tradeScores.length);
+    }
+
     const summary = generateSessionSummary({
-      trades, executionScore, startTime: session.start_time, endTime, dailyObjective: session.daily_objective,
+      trades, executionScore: sessionExecScore, startTime: session.start_time, endTime, dailyObjective: session.daily_objective,
     });
 
     await TradingSession.update(session.id, {
       status: 'ended', end_time: endTime, lockout_until: lockUntil,
-      execution_score: executionScore, summary,
+      execution_score: sessionExecScore, summary,
     });
 
     try {
       const dna = await getOrCreateDNA();
       const newTotal = (dna.total_sessions || 0) + 1;
-      const newAvgScore = Math.round(((dna.avg_execution_score || 0) * (newTotal - 1) + executionScore) / newTotal);
+      const newAvgScore = Math.round(((dna.avg_execution_score || 0) * (newTotal - 1) + sessionExecScore) / newTotal);
       if (dna.id) {
         const { TradingDNA } = await import('@/api/db');
         await TradingDNA.update(dna.id, { total_sessions: newTotal, avg_execution_score: newAvgScore });
