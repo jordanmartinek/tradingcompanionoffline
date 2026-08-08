@@ -92,6 +92,11 @@ export default function Dashboard() {
 
   const [weeklyData, setWeeklyData] = useState({ aPlusCount: 0, target: 10, avgScore: 0 });
 
+  // Discipline streak tracking
+  const [streak, setStreak] = useState(0);
+  const [speedWarning, setSpeedWarning] = useState(null);
+  const ruleCheckTimesRef = React.useRef([]);
+
   // Computed
   const entryRules = useMemo(() => rules.filter(r => r.category === 'entry'), [rules]);
   const enabledEntryCount = useMemo(() => entryRules.filter(r => r.enabled).length, [entryRules]);
@@ -194,7 +199,6 @@ export default function Dashboard() {
   useEffect(() => {
     const cleanup = onSyncChange(async (msg) => {
       if (msg.type === 'trades' || msg.type === 'trading_rules' || msg.type === 'rules') {
-        // Reload trades from localStorage
         const activeId = localStorage.getItem('tcai_active_session');
         if (activeId) {
           const sessionTrades = await Trade.list({ session_id: activeId });
@@ -204,6 +208,62 @@ export default function Dashboard() {
     });
     return cleanup;
   }, []);
+
+  // Calculate discipline streak on load
+  useEffect(() => {
+    async function calcStreak() {
+      const sessions = await TradingSession.list({ status: 'ended' });
+      sessions.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
+      let count = 0;
+      for (const sess of sessions) {
+        const sessionTrades = await Trade.list({ session_id: sess.id });
+        const isDisciplined = sessionTrades.length > 0 && sessionTrades.every(t =>
+          t.rule_compliance?.length > 0 && t.rule_compliance.every(r => r.followed)
+        );
+        if (isDisciplined) count++;
+        else break;
+      }
+      setStreak(count);
+    }
+    calcStreak();
+  }, [trades]);
+
+  // Update browser tab title with streak
+  useEffect(() => {
+    if (phase === 'trading') {
+      const fire = streak > 0 ? '\uD83D\uDD25' : '';
+      document.title = `${fire}${streak > 0 ? ` ${streak} streak` : ''} ${executionScore}% — Trading Companion`;
+    } else if (phase === 'locked') {
+      document.title = '\uD83D\uDD12 Locked — Trading Companion';
+    } else {
+      document.title = 'Trading Companion';
+    }
+  }, [phase, streak, executionScore]);
+
+  // Track rule-check speed and warn if too fast
+  const prevEnabledCountRef = React.useRef(enabledEntryCount);
+  useEffect(() => {
+    if (enabledEntryCount > prevEnabledCountRef.current) {
+      // A rule was just checked
+      ruleCheckTimesRef.current.push(Date.now());
+
+      // Check if last 3+ rules were checked within 8 seconds total
+      const times = ruleCheckTimesRef.current;
+      if (times.length >= 3) {
+        const last3 = times.slice(-3);
+        const span = last3[last3.length - 1] - last3[0];
+        if (span < 8000) {
+          setSpeedWarning('Slow down — are you actually confirming each condition on the chart?');
+          setTimeout(() => setSpeedWarning(null), 6000);
+        }
+      }
+    } else if (enabledEntryCount < prevEnabledCountRef.current) {
+      // Rules were reset — clear timestamps
+      ruleCheckTimesRef.current = [];
+      setSpeedWarning(null);
+    }
+    prevEnabledCountRef.current = enabledEntryCount;
+  }, [enabledEntryCount]);
 
   const loadWeeklyData = useCallback(async () => {
     try {
@@ -353,6 +413,11 @@ export default function Dashboard() {
         <header className="flex items-center justify-between px-4 py-2 border-b border-zinc-800/30 flex-shrink-0">
           <div className="flex items-center gap-3">
             <SessionTimer startTime={session?.start_time} />
+            {streak > 0 && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 font-medium" title={`${streak} disciplined sessions in a row`}>
+                {'\uD83D\uDD25'} {streak}
+              </span>
+            )}
             <span className="text-[10px] text-zinc-600 uppercase tracking-wider hidden sm:inline">
               {session?.daily_objective}
             </span>
@@ -449,6 +514,13 @@ export default function Dashboard() {
                 : isLocked ? `Check ${Math.max(0, Math.ceil(totalEntryCount * 0.7) - enabledEntryCount)} more to unlock`
                 : 'Unlocked'}
             </div>
+
+            {/* Speed warning */}
+            {speedWarning && (
+              <div className="px-3 py-2 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[11px] text-center animate-fade-in mb-2">
+                {speedWarning}
+              </div>
+            )}
 
             {/* Entry Rules */}
             <EntryRuleButtons rules={rules} onToggle={toggleRule} onAdd={addRule} onDelete={deleteRule} onEdit={editRule} onReorder={reorderRules} disabled={false} />
