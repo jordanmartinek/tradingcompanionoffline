@@ -19,6 +19,7 @@ import EndSessionDialog from '@/components/trading/EndSessionDialog';
 import LockedScreen from '@/components/trading/LockedScreen';
 import EmergencyIntervention from '@/components/trading/EmergencyIntervention';
 import TradingViewChart from '@/components/trading/TradingViewChart';
+import VoiceJournal from '@/components/trading/VoiceJournal';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -103,6 +104,9 @@ export default function Dashboard() {
 
   // Session auto-end
   const [sessionTimeLeft, setSessionTimeLeft] = useState(null);
+
+  // Voice journal entries
+  const [voiceEntries, setVoiceEntries] = useState([]);
 
   // Computed
   const entryRules = useMemo(() => rules.filter(r => r.category === 'entry'), [rules]);
@@ -189,6 +193,8 @@ export default function Dashboard() {
             setSession(sess);
             const sessionTrades = await Trade.list({ session_id: activeId });
             setTrades(sessionTrades.sort((a, b) => (a.slot_index || 0) - (b.slot_index || 0)));
+            // Restore voice entries
+            if (sess.voice_entries) setVoiceEntries(sess.voice_entries);
             setPhase('trading');
             await loadWeeklyData();
             return;
@@ -386,6 +392,15 @@ export default function Dashboard() {
     if (trades[index]) { setActiveSlot(index); setShowTradeDetail(true); }
   };
 
+  const handleVoiceEntry = async (entry) => {
+    const updated = [...voiceEntries, entry];
+    setVoiceEntries(updated);
+    // Persist to session
+    if (session) {
+      await TradingSession.update(session.id, { voice_entries: updated });
+    }
+  };
+
   const handleEndSession = async () => {
     const endTime = new Date().toISOString();
     const lockUntil = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
@@ -406,9 +421,18 @@ export default function Dashboard() {
       trades, executionScore: sessionExecScore, startTime: session.start_time, endTime, dailyObjective: session.daily_objective,
     });
 
+    // Compile voice journal from voice entries
+    const voiceJournalText = voiceEntries.length > 0
+      ? voiceEntries.map(e => {
+          const time = new Date(e.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          return `[${time}] ${e.text}`;
+        }).join('\n\n')
+      : null;
+
     await TradingSession.update(session.id, {
       status: 'ended', end_time: endTime, lockout_until: lockUntil,
       execution_score: sessionExecScore, summary,
+      voice_journal: voiceJournalText,
     });
 
     try {
@@ -647,6 +671,9 @@ export default function Dashboard() {
                 onEditTarget={handleEditWeeklyTarget}
               />
             </div>
+
+            {/* Voice Journal */}
+            <VoiceJournal entries={voiceEntries} onNewEntry={handleVoiceEntry} />
 
             {/* Affirmation */}
             {session?.daily_affirmation && (
