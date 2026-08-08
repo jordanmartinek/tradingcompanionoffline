@@ -105,7 +105,11 @@ export default function Dashboard() {
   const dailyLossLimit = session?.daily_loss_limit || 0;
   const lossLimitHit = dailyLossLimit > 0 && cumulativePnl <= -dailyLossLimit;
   const allSlotsFilled = trades.length >= (session?.max_trades || 3);
-  const isLocked = executionScore < LOCK_THRESHOLD || lossLimitHit || allSlotsFilled;
+  const requiredRulesMet = useMemo(() => {
+    const requiredEntryRules = entryRules.filter(r => r.required);
+    return requiredEntryRules.length === 0 || requiredEntryRules.every(r => r.enabled);
+  }, [entryRules]);
+  const isLocked = executionScore < LOCK_THRESHOLD || !requiredRulesMet || lossLimitHit || allSlotsFilled;
 
   // Screen-edge glow
   const glowStyle = useMemo(() => {
@@ -441,6 +445,7 @@ export default function Dashboard() {
             )}>
               {lossLimitHit ? 'Loss limit hit.'
                 : allSlotsFilled ? 'All slots filled.'
+                : !requiredRulesMet ? 'Required rules not met'
                 : isLocked ? `Check ${Math.max(0, Math.ceil(totalEntryCount * 0.7) - enabledEntryCount)} more to unlock`
                 : 'Unlocked'}
             </div>
