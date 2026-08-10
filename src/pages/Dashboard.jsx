@@ -20,6 +20,7 @@ import LockedScreen from '@/components/trading/LockedScreen';
 import EmergencyIntervention from '@/components/trading/EmergencyIntervention';
 import TradingViewChart from '@/components/trading/TradingViewChart';
 import VoiceJournal from '@/components/trading/VoiceJournal';
+import RitualTimer from '@/components/trading/RitualTimer';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -356,7 +357,13 @@ export default function Dashboard() {
     });
     setSession(sess);
     localStorage.setItem('tcai_active_session', sess.id);
-    setPhase('trading');
+    // Go to ritual phase (or straight to trading if ritual is 0/undefined)
+    const ritualSecs = (config.ritual_minutes || 0) * 60;
+    if (ritualSecs > 0) {
+      setPhase('ritual');
+    } else {
+      setPhase('trading');
+    }
     await loadWeeklyData();
   };
 
@@ -483,6 +490,16 @@ export default function Dashboard() {
 
   if (phase === 'setup') {
     return <SessionSetup onBeginSession={handleBeginSession} />;
+  }
+
+  if (phase === 'ritual') {
+    return (
+      <RitualTimer
+        duration={(session?.ritual_minutes || 5) * 60}
+        session={session}
+        onComplete={() => setPhase('trading')}
+      />
+    );
   }
 
   // --- Trading Phase ---

@@ -16,6 +16,7 @@ export default function SessionSetup({ onBeginSession }) {
   const [dailyLossLimit, setDailyLossLimit] = useState(0);
   const [maxSessionMinutes, setMaxSessionMinutes] = useState(180);
   const [lossCooldownSeconds, setLossCooldownSeconds] = useState(300);
+  const [ritualMinutes, setRitualMinutes] = useState(5);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -27,6 +28,7 @@ export default function SessionSetup({ onBeginSession }) {
       daily_loss_limit: dailyLossLimit,
       max_session_minutes: maxSessionMinutes,
       loss_cooldown_seconds: lossCooldownSeconds,
+      ritual_minutes: ritualMinutes,
     });
   };
 
@@ -114,7 +116,7 @@ export default function SessionSetup({ onBeginSession }) {
             <p className="text-[11px] text-zinc-600">Session auto-ends when this time is reached. No override.</p>
           </div>
 
-          {/* Loss Cooldown */}
+          {/* Post-Loss Cooldown */}
           <div className="space-y-1.5">
             <Label htmlFor="cooldown">Post-Loss Cooldown (seconds)</Label>
             <Input
@@ -127,6 +129,21 @@ export default function SessionSetup({ onBeginSession }) {
               onChange={(e) => setLossCooldownSeconds(Number(e.target.value) || 0)}
             />
             <p className="text-[11px] text-zinc-600">After logging a loss, rules are hidden for this long. 0 = off.</p>
+          </div>
+
+          {/* Pre-Market Ritual */}
+          <div className="space-y-1.5">
+            <Label htmlFor="ritual">Pre-Market Ritual (minutes)</Label>
+            <Input
+              id="ritual"
+              type="number"
+              min={1}
+              max={10}
+              step={1}
+              value={ritualMinutes}
+              onChange={(e) => setRitualMinutes(Math.max(1, Math.min(10, Number(e.target.value) || 5)))}
+            />
+            <p className="text-[11px] text-zinc-600">Forced preparation time before trading begins. Cannot be skipped.</p>
           </div>
 
           <Button type="submit" className="w-full h-11 text-sm font-semibold mt-2">
