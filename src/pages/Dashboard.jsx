@@ -5,6 +5,7 @@ import { useTradingRules } from '@/hooks/useTradingRules';
 import { getWeekRange, isAPlusTrade } from '@/shared/weeklyGoal';
 import { generateSessionSummary } from '@/shared/coachingEngine';
 import { onSyncChange } from '@/lib/sync';
+import { startNotificationScheduler, sendNotification, getSessionStartPhrase, getSessionEndPhrase } from '@/lib/notifications';
 
 import SessionSetup from '@/components/trading/SessionSetup';
 import DisciplineWheel from '@/components/trading/DisciplineWheel';
@@ -312,6 +313,13 @@ export default function Dashboard() {
 
     return () => clearInterval(interval);
   }, [phase, session?.start_time, session?.max_session_minutes]);
+
+  // Notification scheduler — runs during trading, uses actual rules
+  useEffect(() => {
+    if (phase !== 'trading') return;
+    const cleanup = startNotificationScheduler(rules);
+    return cleanup;
+  }, [phase, rules]);
 
   const loadWeeklyData = useCallback(async () => {
     try {

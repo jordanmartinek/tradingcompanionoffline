@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectOption } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { affirmations } from '@/shared/tradingConcepts';
+import NotificationSettings from '@/components/trading/NotificationSettings';
 import { cn } from '@/lib/utils';
 
 export default function SessionSetup({ onBeginSession }) {
@@ -145,6 +146,9 @@ export default function SessionSetup({ onBeginSession }) {
             />
             <p className="text-[11px] text-zinc-600">Forced preparation time before trading begins. Cannot be skipped.</p>
           </div>
+
+          {/* Notifications */}
+          <NotificationSettings />
 
           <Button type="submit" className="w-full h-11 text-sm font-semibold mt-2">
             Begin Session
