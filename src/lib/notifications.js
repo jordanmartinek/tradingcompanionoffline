@@ -67,17 +67,32 @@ export async function requestPermission() {
 }
 
 /**
- * Send a browser notification
+ * Send a browser notification (uses service worker if available for background support)
  */
 export function sendNotification(title, body, tag = 'tcai') {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   try {
-    new Notification(title, {
-      body,
-      icon: '/vite.svg',
-      tag: tag + '_' + Date.now(),
-      silent: false,
-    });
+    // Try service worker notification first (works in background)
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready.then(registration => {
+        registration.showNotification(title, {
+          body,
+          icon: '/icon-192.svg',
+          badge: '/icon-192.svg',
+          tag: tag + '_' + Date.now(),
+          vibrate: [200, 100, 200],
+          requireInteraction: false,
+        });
+      });
+    } else {
+      // Fallback to regular notification
+      new Notification(title, {
+        body,
+        icon: '/icon-192.svg',
+        tag: tag + '_' + Date.now(),
+        silent: false,
+      });
+    }
   } catch (e) {
     console.error('Notification error:', e);
   }
