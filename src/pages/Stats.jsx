@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import EquityCurve from '@/components/trading/EquityCurve';
 import TimeHeatmap from '@/components/trading/TimeHeatmap';
 import BadgesDisplay from '@/components/trading/BadgesDisplay';
+import PatternInsights from '@/components/trading/PatternInsights';
 import { cn } from '@/lib/utils';
 
 export default function Stats() {
@@ -320,6 +321,16 @@ export default function Stats() {
             </CardHeader>
             <CardContent>
               <BadgesDisplay />
+            </CardContent>
+          </Card>
+
+          {/* Pattern Detection */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Pattern Insights</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PatternInsights />
             </CardContent>
           </Card>
 

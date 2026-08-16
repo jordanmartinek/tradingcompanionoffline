@@ -1,8 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 
-export default function EndSessionDialog({ open, onOpenChange, onConfirm, tradesCount, executionScore }) {
+export default function EndSessionDialog({ open, onOpenChange, onConfirm, tradesCount, executionScore, onReflectionChange }) {
+  const [answer, setAnswer] = useState('');
+
+  const handleConfirm = () => {
+    if (onReflectionChange) onReflectionChange(answer);
+    onConfirm();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -35,15 +43,31 @@ export default function EndSessionDialog({ open, onOpenChange, onConfirm, trades
           </div>
         </div>
 
-        <p className="text-xs text-zinc-500">
-          After ending, you'll be taken to the Reflection page where you can review your session.
-        </p>
+        {/* Mandatory reflection prompt */}
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-zinc-300">
+            If you could replay today, what's one thing you'd change?
+          </label>
+          <Textarea
+            placeholder="e.g., I would have waited for the 5m confirmation instead of jumping in on the 1m..."
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            className="min-h-[60px] text-xs"
+          />
+          {answer.length === 0 && (
+            <p className="text-[10px] text-amber-400/70">Required before ending session.</p>
+          )}
+        </div>
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             Keep Trading
           </Button>
-          <Button variant="destructive" onClick={onConfirm}>
+          <Button
+            variant="destructive"
+            onClick={handleConfirm}
+            disabled={answer.trim().length === 0}
+          >
             End Session
           </Button>
         </DialogFooter>

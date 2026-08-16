@@ -7,6 +7,8 @@ import { generateSessionSummary } from '@/shared/coachingEngine';
 import { onSyncChange } from '@/lib/sync';
 import { startNotificationScheduler, sendNotification, getSessionStartPhrase, getSessionEndPhrase } from '@/lib/notifications';
 import { getShortcuts, useKeyboardShortcuts } from '@/lib/shortcuts';
+import { logAppUsageToday } from '@/lib/integrity';
+import { calculateTradingScore, getGrade } from '@/lib/tradingScore';
 
 import SessionSetup from '@/components/trading/SessionSetup';
 import DisciplineWheel from '@/components/trading/DisciplineWheel';
@@ -23,6 +25,9 @@ import EmergencyIntervention from '@/components/trading/EmergencyIntervention';
 import TradingViewChart from '@/components/trading/TradingViewChart';
 import VoiceJournal from '@/components/trading/VoiceJournal';
 import RitualTimer from '@/components/trading/RitualTimer';
+import Confetti from '@/components/trading/Confetti';
+import RiskBudget from '@/components/trading/RiskBudget';
+import PositionTimer from '@/components/trading/PositionTimer';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -110,6 +115,13 @@ export default function Dashboard() {
 
   // Voice journal entries
   const [voiceEntries, setVoiceEntries] = useState([]);
+
+  // Confetti trigger for A+ wins
+  const [confettiTrigger, setConfettiTrigger] = useState(0);
+
+  // "What would you change" prompt (shown at end session)
+  const [showReflectionPrompt, setShowReflectionPrompt] = useState(false);
+  const [reflectionAnswer, setReflectionAnswer] = useState('');
 
   // Keyboard shortcuts
   const shortcuts = getShortcuts();
@@ -369,6 +381,7 @@ export default function Dashboard() {
   }, [session, trades]);
 
   const handleBeginSession = async (config) => {
+    logAppUsageToday();
     const sess = await TradingSession.create({
       ...config,
       status: 'active',
@@ -415,6 +428,12 @@ export default function Dashboard() {
     if (!existing) await resetAllRules();
     setShowTradeDetail(false);
     await loadWeeklyData();
+
+    // Trigger confetti if it's an A+ win (all rules followed + win)
+    if (!existing && tradeData.result === 'win') {
+      const isAplus = tradeData.rule_compliance?.length > 0 && tradeData.rule_compliance.every(r => r.followed);
+      if (isAplus) setConfettiTrigger(prev => prev + 1);
+    }
   };
 
   const handleSlotClick = (index) => {
@@ -458,10 +477,15 @@ export default function Dashboard() {
         }).join('\n\n')
       : null;
 
+    // Calculate daily trading score
+    const dailyScore = calculateTradingScore(trades, sessionExecScore);
+
     await TradingSession.update(session.id, {
       status: 'ended', end_time: endTime, lockout_until: lockUntil,
       execution_score: sessionExecScore, summary,
       voice_journal: voiceJournalText,
+      trading_score: dailyScore,
+      reflection_answer: reflectionAnswer || null,
     });
 
     try {
@@ -531,6 +555,7 @@ export default function Dashboard() {
     <>
       <div className="screen-glow animate-pulse-glow" style={glowStyle} />
       <EmergencyIntervention open={showEmergency} onClose={() => setShowEmergency(false)} />
+      <Confetti trigger={confettiTrigger} />
 
       <div className="h-screen flex flex-col overflow-hidden">
         {/* Header bar */}
@@ -634,6 +659,13 @@ export default function Dashboard() {
               <WheelPhrase side="right" isLocked={isLocked} />
             </div>
 
+            {/* Risk Budget + Position Timer */}
+            <RiskBudget dailyLossLimit={dailyLossLimit} cumulativePnl={cumulativePnl} />
+            <PositionTimer
+              lastTradeTime={trades.length > 0 ? trades[trades.length - 1]?.entry_time : null}
+              isInTrade={trades.length > 0 && !trades[trades.length - 1]?.exit_time}
+            />
+
             {/* Status line */}
             <div className={cn(
               'text-center text-[11px] font-medium py-1 rounded transition-all',
@@ -725,7 +757,7 @@ export default function Dashboard() {
       {/* Dialogs */}
       <ExecuteConfirmDialog open={showExecuteDialog} onOpenChange={setShowExecuteDialog} rules={rules} onConfirm={handleExecuteTrade} />
       <TradeDetail open={showTradeDetail} onOpenChange={setShowTradeDetail} trade={activeSlot != null ? trades[activeSlot] : null} rules={rules} slotIndex={activeSlot ?? trades.length} onSave={handleSaveTrade} />
-      <EndSessionDialog open={showEndDialog} onOpenChange={setShowEndDialog} onConfirm={handleEndSession} tradesCount={trades.length} executionScore={executionScore} />
+      <EndSessionDialog open={showEndDialog} onOpenChange={setShowEndDialog} onConfirm={handleEndSession} tradesCount={trades.length} executionScore={executionScore} onReflectionChange={setReflectionAnswer} />
     </>
   );
 }
