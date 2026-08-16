@@ -5,6 +5,9 @@ import { isAPlusTrade } from '@/shared/weeklyGoal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import EquityCurve from '@/components/trading/EquityCurve';
+import TimeHeatmap from '@/components/trading/TimeHeatmap';
+import BadgesDisplay from '@/components/trading/BadgesDisplay';
 import { cn } from '@/lib/utils';
 
 export default function Stats() {
@@ -234,6 +237,89 @@ export default function Stats() {
               <p className="text-xs text-zinc-500 mt-3">
                 A "disciplined" session = every trade had all rules followed.
               </p>
+            </CardContent>
+          </Card>
+
+          {/* Equity Curve */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Equity Curve</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <EquityCurve />
+            </CardContent>
+          </Card>
+
+          {/* Time-of-Day Heatmap */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Time-of-Day Performance</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <TimeHeatmap />
+            </CardContent>
+          </Card>
+
+          {/* Win/Loss Streak */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Win/Loss Streaks</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50 text-center">
+                  <p className="text-[10px] text-zinc-500 uppercase">Current W/L</p>
+                  <p className={cn(
+                    'text-2xl font-mono font-bold mt-1',
+                    (() => {
+                      let streak = 0, type = '';
+                      for (let i = allTrades.length - 1; i >= 0; i--) {
+                        const r = allTrades[i].result;
+                        if (r !== 'win' && r !== 'loss') continue;
+                        if (!type) type = r;
+                        if (r === type) streak++;
+                        else break;
+                      }
+                      return type === 'win' ? 'text-emerald-400' : streak > 0 ? 'text-red-400' : 'text-zinc-500';
+                    })()
+                  )}>
+                    {(() => {
+                      let streak = 0, type = '';
+                      for (let i = allTrades.length - 1; i >= 0; i--) {
+                        const r = allTrades[i].result;
+                        if (r !== 'win' && r !== 'loss') continue;
+                        if (!type) type = r;
+                        if (r === type) streak++;
+                        else break;
+                      }
+                      return streak > 0 ? `${streak}${type === 'win' ? 'W' : 'L'}` : '—';
+                    })()}
+                  </p>
+                </div>
+                <div className="p-3 rounded-lg bg-zinc-800/50 border border-zinc-700/50 text-center">
+                  <p className="text-[10px] text-zinc-500 uppercase">Best Win Streak</p>
+                  <p className="text-2xl font-mono font-bold text-emerald-400 mt-1">
+                    {(() => {
+                      let best = 0, cur = 0;
+                      for (const t of allTrades) {
+                        if (t.result === 'win') { cur++; best = Math.max(best, cur); }
+                        else if (t.result === 'loss') cur = 0;
+                      }
+                      return best;
+                    })()}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Badges */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Milestone Badges</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BadgesDisplay />
             </CardContent>
           </Card>
 

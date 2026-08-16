@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectOption } from '@/components/ui/select';
+import ConvictionRating from '@/components/trading/ConvictionRating';
 import { emotionsList } from '@/shared/tradingConcepts';
 import { cn } from '@/lib/utils';
 
@@ -51,6 +52,7 @@ export default function TradeDetail({ open, onOpenChange, trade, rules, onSave, 
         emotion_before: '',
         emotion_after: '',
         notes: '',
+        conviction: 0,
         rule_compliance: rules.map(r => ({ rule: r.title, followed: false })),
       });
     }
@@ -207,6 +209,12 @@ export default function TradeDetail({ open, onOpenChange, trade, rules, onSave, 
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Conviction Rating */}
+          <div className="space-y-2">
+            <Label>Conviction (1-5)</Label>
+            <ConvictionRating value={form.conviction} onChange={(v) => setForm({ ...form, conviction: v })} />
           </div>
 
           {/* Notes */}

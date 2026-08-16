@@ -6,6 +6,7 @@ import { getWeekRange, isAPlusTrade } from '@/shared/weeklyGoal';
 import { generateSessionSummary } from '@/shared/coachingEngine';
 import { onSyncChange } from '@/lib/sync';
 import { startNotificationScheduler, sendNotification, getSessionStartPhrase, getSessionEndPhrase } from '@/lib/notifications';
+import { getShortcuts, useKeyboardShortcuts } from '@/lib/shortcuts';
 
 import SessionSetup from '@/components/trading/SessionSetup';
 import DisciplineWheel from '@/components/trading/DisciplineWheel';
@@ -109,6 +110,19 @@ export default function Dashboard() {
 
   // Voice journal entries
   const [voiceEntries, setVoiceEntries] = useState([]);
+
+  // Keyboard shortcuts
+  const shortcuts = getShortcuts();
+  useKeyboardShortcuts(shortcuts, {
+    execute: () => { if (!isLocked && phase === 'trading') setShowExecuteDialog(true); },
+    voiceJournal: () => {}, // handled by VoiceJournal component
+    emergency: () => { if (phase === 'trading') setShowEmergency(true); },
+    toggleFirstRule: () => {
+      const firstUnchecked = entryRules.find(r => !r.enabled);
+      if (firstUnchecked && phase === 'trading') toggleRule(firstUnchecked.id);
+    },
+    endSession: () => { if (phase === 'trading') setShowEndDialog(true); },
+  });
 
   // Computed
   const entryRules = useMemo(() => rules.filter(r => r.category === 'entry'), [rules]);

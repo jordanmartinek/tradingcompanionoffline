@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectOption } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { affirmations } from '@/shared/tradingConcepts';
+import { getTemplates } from '@/lib/templates';
 import NotificationSettings from '@/components/trading/NotificationSettings';
 import { cn } from '@/lib/utils';
 
@@ -49,6 +50,29 @@ export default function SessionSetup({ onBeginSession }) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Template Quick-Start */}
+          <div className="space-y-1.5">
+            <Label>Quick Start Template</Label>
+            <div className="flex gap-2 flex-wrap">
+              {getTemplates().map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => {
+                    setMaxTrades(t.max_trades);
+                    setDailyLossLimit(t.daily_loss_limit);
+                    setMaxSessionMinutes(t.max_session_minutes);
+                    setLossCooldownSeconds(t.loss_cooldown_seconds);
+                    setRitualMinutes(t.ritual_minutes);
+                  }}
+                  className="px-3 py-1.5 rounded-md border border-zinc-700 bg-zinc-800/50 text-xs text-zinc-400 hover:border-teal-500/50 hover:text-teal-300 transition-all"
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="objective">Daily Objective</Label>
             <Input

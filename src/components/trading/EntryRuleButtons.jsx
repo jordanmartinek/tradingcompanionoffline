@@ -153,6 +153,7 @@ export default function EntryRuleButtons({ rules, onToggle, onAdd, onDelete, onE
       <div className={cn('gap-2', editMode ? 'space-y-2' : 'grid grid-cols-1 sm:grid-cols-2 gap-2')}>
         {entryRules.map((rule, idx) => {
           const isHolding = holdingId === rule.id;
+          const isDimmed = holdingId !== null && !isHolding;
           const isFirst = idx === 0;
           const isLast = idx === entryRules.length - 1;
 
@@ -244,7 +245,8 @@ export default function EntryRuleButtons({ rules, onToggle, onAdd, onDelete, onE
                       ? 'border-amber-500/30 bg-amber-500/5 text-zinc-400'
                       : 'border-zinc-700 bg-zinc-800/30 text-zinc-400',
                     disabled && 'opacity-50 cursor-not-allowed',
-                    isHolding && 'border-teal-500/60'
+                    isHolding && 'border-teal-500/60 scale-[1.02] z-10',
+                    isDimmed && 'opacity-30 scale-[0.98]'
                   )}
                 >
                   {/* Hold progress bar */}
