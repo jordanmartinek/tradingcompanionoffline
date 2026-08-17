@@ -324,15 +324,20 @@ export default function Dashboard() {
   // Session auto-end timer
   useEffect(() => {
     if (phase !== 'trading' || !session?.start_time || !session?.max_session_minutes) return;
+    // Don't run if already locked
+    if (localStorage.getItem('tcai_lockout')) return;
+
     const maxMs = session.max_session_minutes * 60 * 1000;
     const endTime = new Date(session.start_time).getTime() + maxMs;
+
+    // If the end time has already passed (e.g., page was refreshed after expiry), don't auto-fire
+    if (Date.now() >= endTime) return;
 
     const interval = setInterval(() => {
       const remaining = Math.max(0, endTime - Date.now());
       setSessionTimeLeft(remaining);
       if (remaining <= 0) {
         clearInterval(interval);
-        // Auto-end the session
         handleEndSession();
       }
     }, 1000);
@@ -450,6 +455,9 @@ export default function Dashboard() {
   };
 
   const handleEndSession = async () => {
+    // Guard: don't re-end an already-ended session
+    if (!session || session.status === 'ended') return;
+
     const endTime = new Date().toISOString();
     const lockUntil = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
 
@@ -501,6 +509,7 @@ export default function Dashboard() {
     localStorage.setItem('tcai_lockout', JSON.stringify({ until: lockUntil, sessionId: session.id }));
     localStorage.removeItem('tcai_active_session');
     setShowEndDialog(false);
+    setSession(prev => prev ? { ...prev, status: 'ended' } : prev);
     navigate('/reflection', { state: { sessionId: session.id } });
   };
 
