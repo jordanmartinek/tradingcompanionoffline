@@ -20,6 +20,13 @@ export default function SessionSetup({ onBeginSession }) {
   const [lossCooldownSeconds, setLossCooldownSeconds] = useState(300);
   const [ritualMinutes, setRitualMinutes] = useState(5);
 
+  // Pre-trade analysis questions
+  const [liquidityPools, setLiquidityPools] = useState('');
+  const [likelyTarget, setLikelyTarget] = useState('');
+  const [gexState, setGexState] = useState('');
+  const [valueAreas, setValueAreas] = useState('');
+  const [openLocation, setOpenLocation] = useState('');
+
   const handleSubmit = (e) => {
     e.preventDefault();
     onBeginSession({
@@ -31,6 +38,12 @@ export default function SessionSetup({ onBeginSession }) {
       max_session_minutes: maxSessionMinutes,
       loss_cooldown_seconds: lossCooldownSeconds,
       ritual_minutes: ritualMinutes,
+      // Pre-trade analysis
+      liquidity_pools: liquidityPools,
+      likely_target: likelyTarget,
+      gex_state: gexState,
+      value_areas: valueAreas,
+      open_location: openLocation,
     });
   };
 
@@ -92,6 +105,87 @@ export default function SessionSetup({ onBeginSession }) {
               onChange={(e) => setPreMarketNotes(e.target.value)}
               className="min-h-[50px]"
             />
+          </div>
+
+          {/* Pre-Trade Analysis Questions */}
+          <div className="space-y-4 p-4 rounded-lg bg-zinc-800/20 border border-zinc-800/50">
+            <p className="text-[11px] text-teal-400/80 uppercase tracking-wider font-medium">Pre-Trade Analysis</p>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="liquidity">Where are the closest major liquidity pools?</Label>
+              <Textarea
+                id="liquidity"
+                placeholder="e.g., BSL at 5480, SSL at 5420, equal lows at 5395..."
+                value={liquidityPools}
+                onChange={(e) => setLiquidityPools(e.target.value)}
+                className="min-h-[40px]"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="target">Which one is price likely to attack first?</Label>
+              <Input
+                id="target"
+                placeholder="e.g., SSL at 5420 — downside sweep before reversal"
+                value={likelyTarget}
+                onChange={(e) => setLikelyTarget(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="gex">Is the market in a GEX positive or negative state?</Label>
+              <div className="flex gap-2">
+                {['Positive', 'Negative', 'Neutral/Unknown'].map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setGexState(opt)}
+                    className={cn(
+                      'flex-1 px-3 py-2 rounded-md border text-xs font-medium transition-all',
+                      gexState === opt
+                        ? opt === 'Positive' ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300'
+                        : opt === 'Negative' ? 'border-red-500/50 bg-red-500/10 text-red-300'
+                        : 'border-zinc-500/50 bg-zinc-500/10 text-zinc-300'
+                        : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
+                    )}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="va">Where are your value areas?</Label>
+              <Textarea
+                id="va"
+                placeholder="e.g., VAH: 5465, POC: 5445, VAL: 5425..."
+                value={valueAreas}
+                onChange={(e) => setValueAreas(e.target.value)}
+                className="min-h-[40px]"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="openLoc">Has price opened inside or outside the previous day's value area?</Label>
+              <div className="flex gap-2">
+                {['Inside VA', 'Above VA', 'Below VA'].map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setOpenLocation(opt)}
+                    className={cn(
+                      'flex-1 px-3 py-2 rounded-md border text-xs font-medium transition-all',
+                      openLocation === opt
+                        ? 'border-teal-500/50 bg-teal-500/10 text-teal-300'
+                        : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
+                    )}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="space-y-1.5">

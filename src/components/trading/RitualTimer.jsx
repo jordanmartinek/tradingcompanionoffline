@@ -89,6 +89,43 @@ export default function RitualTimer({ duration, session, onComplete }) {
               <p className="text-sm text-teal-300 italic">{session.daily_affirmation}</p>
             </div>
           )}
+
+          {/* Pre-trade analysis answers */}
+          {(session?.liquidity_pools || session?.likely_target || session?.gex_state || session?.value_areas || session?.open_location) && (
+            <div className="px-4 py-3 rounded-lg bg-zinc-800/40 border border-zinc-700/30 space-y-2">
+              <p className="text-[10px] text-amber-400/70 uppercase tracking-wider">Your Analysis</p>
+              {session.liquidity_pools && (
+                <div>
+                  <p className="text-[9px] text-zinc-500">Liquidity Pools</p>
+                  <p className="text-xs text-zinc-300">{session.liquidity_pools}</p>
+                </div>
+              )}
+              {session.likely_target && (
+                <div>
+                  <p className="text-[9px] text-zinc-500">Likely Target</p>
+                  <p className="text-xs text-zinc-300">{session.likely_target}</p>
+                </div>
+              )}
+              {session.gex_state && (
+                <div>
+                  <p className="text-[9px] text-zinc-500">GEX State</p>
+                  <p className="text-xs text-zinc-300">{session.gex_state}</p>
+                </div>
+              )}
+              {session.value_areas && (
+                <div>
+                  <p className="text-[9px] text-zinc-500">Value Areas</p>
+                  <p className="text-xs text-zinc-300">{session.value_areas}</p>
+                </div>
+              )}
+              {session.open_location && (
+                <div>
+                  <p className="text-[9px] text-zinc-500">Open Location</p>
+                  <p className="text-xs text-zinc-300">{session.open_location}</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Checklist reminders */}
