@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Reflection from './pages/Reflection';
 import Stats from './pages/Stats';
 import Widget from './pages/Widget';
+import Cockpit from './pages/Cockpit';
 
 // Simple auth gate (always authenticated for this standalone version)
 function AdminRoute({ children }) {
@@ -18,6 +19,7 @@ export default function App() {
         <Route path="/reflection" element={<AdminRoute><Reflection /></AdminRoute>} />
         <Route path="/stats" element={<AdminRoute><Stats /></AdminRoute>} />
         <Route path="/widget" element={<Widget />} />
+        <Route path="/cockpit" element={<Cockpit />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </HashRouter>
