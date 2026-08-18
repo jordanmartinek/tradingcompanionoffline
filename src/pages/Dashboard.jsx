@@ -16,6 +16,9 @@ import EntryRuleButtons from '@/components/trading/EntryRuleButtons';
 import OtherRulesDropdown from '@/components/trading/OtherRulesDropdown';
 import EmaStatusToggle from '@/components/trading/EmaStatusToggle';
 import LiquidityTargetToggle from '@/components/trading/LiquidityTargetToggle';
+import KillZoneBadge from '@/components/trading/KillZoneBadge';
+import LevelQueue from '@/components/trading/LevelQueue';
+import DisplacementTracker from '@/components/trading/DisplacementTracker';
 import ExecuteConfirmDialog from '@/components/trading/ExecuteConfirmDialog';
 import TradeDetail from '@/components/trading/TradeDetail';
 import SessionTimer from '@/components/trading/SessionTimer';
@@ -96,6 +99,8 @@ export default function Dashboard() {
 
   const [emaDirection, setEmaDirection] = useState(null);  // kept for wheel compat
   const [liquidityTarget, setLiquidityTarget] = useState(null); // 'bsl' | 'ssl' | 'both' | null
+  const [levelSwept, setLevelSwept] = useState(false); // true when a level in queue is marked "swept"
+  const [displacementConfirmed, setDisplacementConfirmed] = useState(false);
   const [showExecuteDialog, setShowExecuteDialog] = useState(false);
   const [showTradeDetail, setShowTradeDetail] = useState(false);
   const [activeSlot, setActiveSlot] = useState(null);
@@ -574,6 +579,7 @@ export default function Dashboard() {
         <header className="flex items-center justify-between px-4 py-2 border-b border-zinc-800/30 flex-shrink-0">
           <div className="flex items-center gap-3">
             <SessionTimer startTime={session?.start_time} />
+            <KillZoneBadge />
             {streak > 0 && (
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 font-medium" title={`${streak} disciplined sessions in a row`}>
                 {'\uD83D\uDD25'} {streak}
@@ -655,6 +661,19 @@ export default function Dashboard() {
               <div className="flex flex-col items-center">
                 <div className="mb-2">
                   <LiquidityTargetToggle target={liquidityTarget} onChange={setLiquidityTarget} />
+                </div>
+
+                {/* Level Queue */}
+                <div className="mb-3 w-full max-w-xs">
+                  <LevelQueue onLevelSwept={() => setLevelSwept(true)} />
+                </div>
+
+                {/* Displacement Tracker — shows after a level is swept */}
+                <div className="mb-3 w-full max-w-xs">
+                  <DisplacementTracker
+                    active={levelSwept}
+                    onConfirm={() => setDisplacementConfirmed(true)}
+                  />
                 </div>
 
                 <DisciplineWheel
