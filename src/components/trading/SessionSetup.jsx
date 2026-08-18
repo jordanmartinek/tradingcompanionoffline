@@ -8,6 +8,7 @@ import { Slider } from '@/components/ui/slider';
 import { affirmations } from '@/shared/tradingConcepts';
 import { getTemplates } from '@/lib/templates';
 import NotificationSettings from '@/components/trading/NotificationSettings';
+import TradingViewChart from '@/components/trading/TradingViewChart';
 import { cn } from '@/lib/utils';
 
 export default function SessionSetup({ onBeginSession }) {
@@ -48,18 +49,23 @@ export default function SessionSetup({ onBeginSession }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-3">
-          <div className="mx-auto w-14 h-14 rounded-full bg-teal-500/10 border border-teal-500/30 flex items-center justify-center">
-            <svg className="w-7 h-7 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+    <div className="h-screen flex overflow-hidden">
+      {/* Left: Chart with drawing tools for pre-market analysis */}
+      <TradingViewChart className="flex-1 min-w-0" />
+
+      {/* Right: Setup form (scrollable) */}
+      <div className="w-96 lg:w-[420px] flex-shrink-0 overflow-y-auto border-l border-zinc-800/30 p-5">
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <div className="mx-auto w-12 h-12 rounded-full bg-teal-500/10 border border-teal-500/30 flex items-center justify-center">
+              <svg className="w-6 h-6 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <h1 className="text-lg font-bold text-zinc-100">Begin Session</h1>
+            <p className="text-zinc-500 text-xs">Draw your levels on the chart. Set your intention.</p>
           </div>
-          <h1 className="text-xl font-bold text-zinc-100">Begin Session</h1>
-          <p className="text-zinc-500 text-sm">Set your intention.</p>
-        </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -272,6 +278,7 @@ export default function SessionSetup({ onBeginSession }) {
             Begin Session
           </Button>
         </form>
+        </div>
       </div>
     </div>
   );

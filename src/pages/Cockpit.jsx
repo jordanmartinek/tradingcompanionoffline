@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CockpitProvider, useCockpit } from '@/lib/cockpitStore';
 import { INSTRUMENTS } from '@/lib/cockpitConstants';
@@ -30,7 +30,6 @@ function CockpitInner() {
     <div className="h-screen flex flex-col bg-zinc-950 overflow-hidden">
       {/* Top Bar */}
       <header className="flex items-center justify-between px-3 py-1.5 border-b border-zinc-800/50 flex-shrink-0 bg-zinc-900/50">
-        {/* Left: Instrument + Price */}
         <div className="flex items-center gap-3">
           <select
             value={symbol}
@@ -57,16 +56,13 @@ function CockpitInner() {
           )}
         </div>
 
-        {/* Center: Stats */}
         <div className="flex items-center gap-4 text-[10px]">
           <span className="text-zinc-500">CONFIRMS: <span className={confirmationCount > 0 ? 'text-amber-400' : 'text-zinc-400'}>{confirmationCount}/{confirmationTotal}</span></span>
           <span className="text-zinc-500">TRADES: <span className="text-zinc-300">{todayTrades.length}</span></span>
           <span className="text-zinc-500">P&L: <span className={cn(dailyPnL > 0 ? 'text-green-400' : dailyPnL < 0 ? 'text-red-400' : 'text-zinc-400')}>${dailyPnL.toFixed(0)}</span></span>
-          <span className="text-zinc-500">EXEC: <span className={cn(executionScore >= 80 ? 'text-green-400' : executionScore >= 50 ? 'text-amber-400' : 'text-zinc-400')}>{executionScore}</span></span>
-          <span className={cn('font-medium', disciplineLocked ? 'text-red-400' : 'text-green-400')}>{disciplineLocked ? '🔒 LOCKED' : '● ACTIVE'}</span>
+          <span className={cn('font-medium', disciplineLocked ? 'text-red-400' : 'text-green-400')}>{disciplineLocked ? '🔒' : '●'}</span>
         </div>
 
-        {/* Right: Nav */}
         <div className="flex items-center gap-2">
           <span className="text-[10px] text-zinc-600">{emotionalState}</span>
           <button
@@ -78,20 +74,20 @@ function CockpitInner() {
         </div>
       </header>
 
-      {/* Main 3-Column Layout */}
+      {/* Main: Left panels + Chart + Right panels */}
       <div className="flex-1 flex min-h-0">
-        {/* LEFT RAIL — scrollable */}
-        <div className="w-64 flex-shrink-0 overflow-y-auto border-r border-zinc-800/30 px-3 py-3 space-y-5">
+        {/* LEFT RAIL */}
+        <div className="w-56 lg:w-64 flex-shrink-0 overflow-y-auto border-r border-zinc-800/30 px-3 py-3 space-y-5">
           <EnvironmentPanel />
           <LevelsPanel />
           <LiquidityPanel />
         </div>
 
-        {/* CENTER — Chart */}
+        {/* CENTER — Chart with full drawing tools */}
         <TradingViewChart className="flex-1 min-w-0" />
 
-        {/* RIGHT RAIL — scrollable */}
-        <div className="w-64 flex-shrink-0 overflow-y-auto border-l border-zinc-800/30 px-3 py-3 space-y-5">
+        {/* RIGHT RAIL */}
+        <div className="w-56 lg:w-64 flex-shrink-0 overflow-y-auto border-l border-zinc-800/30 px-3 py-3 space-y-5">
           <FibCalculator />
           <LocationPanel />
           <ConfirmationPanel />
