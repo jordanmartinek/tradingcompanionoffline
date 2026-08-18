@@ -28,6 +28,7 @@ import RitualTimer from '@/components/trading/RitualTimer';
 import Confetti from '@/components/trading/Confetti';
 import RiskBudget from '@/components/trading/RiskBudget';
 import PositionTimer from '@/components/trading/PositionTimer';
+import LevelPanel from '@/components/trading/LevelPanel';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -624,10 +625,13 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {/* Main content: Chart left, Controls right */}
+        {/* Main content: Chart left, Levels, Controls right */}
         <div className="flex-1 flex min-h-0">
           {/* TradingView Chart — left panel */}
           <TradingViewChart className="flex-1 min-w-0 border-r border-zinc-800/30" />
+
+          {/* Price Level Reference Panel */}
+          <LevelPanel session={session} />
 
           {/* Controls panel — right side, scrollable */}
           <div className="w-80 lg:w-96 flex-shrink-0 overflow-y-auto px-4 py-4 space-y-4">
