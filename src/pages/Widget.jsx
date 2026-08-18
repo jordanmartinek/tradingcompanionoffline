@@ -15,7 +15,7 @@ const RESULTS = [
 
 export default function Widget() {
   const { rules, toggleRule, resetAllRules, loading } = useTradingRules();
-  const [emaDirection, setEmaDirection] = useState(null);
+  const [liquidityTarget, setLiquidityTarget] = useState(null); // 'bsl' | 'ssl' | 'both' | null
   const [session, setSession] = useState(null);
   const [trades, setTrades] = useState([]);
 
@@ -54,12 +54,13 @@ export default function Widget() {
   const maxTrades = session?.max_trades || 3;
   const allSlotsFilled = trades.length >= maxTrades;
 
-  // Border glow color based on EMA direction
+  // Border glow color based on liquidity target
   const borderGlowClass = useMemo(() => {
-    if (emaDirection === 'above') return 'shadow-[inset_0_0_0_2px_#10b981,0_0_20px_#10b98140,inset_0_0_20px_#10b98120]';
-    if (emaDirection === 'below') return 'shadow-[inset_0_0_0_2px_#ef4444,0_0_20px_#ef444440,inset_0_0_20px_#ef444420]';
+    if (liquidityTarget === 'bsl') return 'shadow-[inset_0_0_0_2px_#10b981,0_0_20px_#10b98140,inset_0_0_20px_#10b98120]';
+    if (liquidityTarget === 'ssl') return 'shadow-[inset_0_0_0_2px_#ef4444,0_0_20px_#ef444440,inset_0_0_20px_#ef444420]';
+    if (liquidityTarget === 'both') return 'shadow-[inset_0_0_0_2px_#f59e0b,0_0_20px_#f59e0b40,inset_0_0_20px_#f59e0b20]';
     return 'shadow-[inset_0_0_0_1px_#27272a]';
-  }, [emaDirection]);
+  }, [liquidityTarget]);
 
   // Step 1: Execute trade — create record, show logging form
   const handleExecute = async () => {
@@ -171,30 +172,40 @@ export default function Widget() {
         </div>
       </div>
 
-      {/* EMA Toggle — always visible */}
+      {/* Liquidity Target Toggle */}
       <div className="flex items-center gap-1 px-3 py-2 border-b border-zinc-800/30">
-        <span className="text-[10px] text-zinc-500 mr-1.5 uppercase tracking-wider">20 EMA:</span>
         <button
-          onClick={() => setEmaDirection(emaDirection === 'above' ? null : 'above')}
+          onClick={() => setLiquidityTarget(liquidityTarget === 'bsl' ? null : 'bsl')}
           className={cn(
-            'flex-1 px-2 py-1 rounded text-[11px] font-medium transition-all text-center',
-            emaDirection === 'above'
-              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-sm shadow-emerald-500/20'
-              : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/50 hover:border-zinc-600'
+            'flex-1 px-2 py-1 rounded text-[11px] font-medium transition-all text-center border',
+            liquidityTarget === 'bsl'
+              ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/50 shadow-sm shadow-emerald-500/20'
+              : 'bg-zinc-800/50 text-zinc-500 border-zinc-700/50 hover:border-zinc-600'
           )}
         >
-          Above
+          BSL ▲
         </button>
         <button
-          onClick={() => setEmaDirection(emaDirection === 'below' ? null : 'below')}
+          onClick={() => setLiquidityTarget(liquidityTarget === 'ssl' ? null : 'ssl')}
           className={cn(
-            'flex-1 px-2 py-1 rounded text-[11px] font-medium transition-all text-center',
-            emaDirection === 'below'
-              ? 'bg-red-500/20 text-red-300 border border-red-500/50 shadow-sm shadow-red-500/20'
-              : 'bg-zinc-800/50 text-zinc-500 border border-zinc-700/50 hover:border-zinc-600'
+            'flex-1 px-2 py-1 rounded text-[11px] font-medium transition-all text-center border',
+            liquidityTarget === 'ssl'
+              ? 'bg-red-500/15 text-red-300 border-red-500/50 shadow-sm shadow-red-500/20'
+              : 'bg-zinc-800/50 text-zinc-500 border-zinc-700/50 hover:border-zinc-600'
           )}
         >
-          Below
+          SSL ▼
+        </button>
+        <button
+          onClick={() => setLiquidityTarget(liquidityTarget === 'both' ? null : 'both')}
+          className={cn(
+            'flex-1 px-2 py-1 rounded text-[11px] font-medium transition-all text-center border',
+            liquidityTarget === 'both'
+              ? 'bg-amber-500/15 text-amber-300 border-amber-500/50 shadow-sm shadow-amber-500/20'
+              : 'bg-zinc-800/50 text-zinc-500 border-zinc-700/50 hover:border-zinc-600'
+          )}
+        >
+          Both ◆
         </button>
       </div>
 

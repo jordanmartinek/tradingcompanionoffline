@@ -15,6 +15,7 @@ import DisciplineWheel from '@/components/trading/DisciplineWheel';
 import EntryRuleButtons from '@/components/trading/EntryRuleButtons';
 import OtherRulesDropdown from '@/components/trading/OtherRulesDropdown';
 import EmaStatusToggle from '@/components/trading/EmaStatusToggle';
+import LiquidityTargetToggle from '@/components/trading/LiquidityTargetToggle';
 import ExecuteConfirmDialog from '@/components/trading/ExecuteConfirmDialog';
 import TradeDetail from '@/components/trading/TradeDetail';
 import SessionTimer from '@/components/trading/SessionTimer';
@@ -93,7 +94,8 @@ export default function Dashboard() {
   const [trades, setTrades] = useState([]);
   const [lockoutUntil, setLockoutUntil] = useState(null);
 
-  const [emaDirection, setEmaDirection] = useState(null);
+  const [emaDirection, setEmaDirection] = useState(null);  // kept for wheel compat
+  const [liquidityTarget, setLiquidityTarget] = useState(null); // 'bsl' | 'ssl' | 'both' | null
   const [showExecuteDialog, setShowExecuteDialog] = useState(false);
   const [showTradeDetail, setShowTradeDetail] = useState(false);
   const [activeSlot, setActiveSlot] = useState(null);
@@ -652,7 +654,7 @@ export default function Dashboard() {
 
               <div className="flex flex-col items-center">
                 <div className="mb-2">
-                  <EmaStatusToggle direction={emaDirection} onChange={setEmaDirection} />
+                  <LiquidityTargetToggle target={liquidityTarget} onChange={setLiquidityTarget} />
                 </div>
 
                 <DisciplineWheel
@@ -660,7 +662,7 @@ export default function Dashboard() {
                   executionScore={executionScore}
                   trades={trades}
                   maxTrades={session?.max_trades || 3}
-                  emaDirection={emaDirection}
+                  liquidityTarget={liquidityTarget}
                   onSlotClick={handleSlotClick}
                 />
 

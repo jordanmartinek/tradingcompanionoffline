@@ -37,7 +37,7 @@ export default function DisciplineWheel({
   executionScore = 0,
   trades = [],
   maxTrades = 3,
-  emaDirection = null,
+  liquidityTarget = null, // 'bsl' | 'ssl' | 'both' | null
   onSlotClick,
 }) {
   const entryRules = rules.filter(r => r.category === 'entry');
@@ -112,10 +112,10 @@ export default function DisciplineWheel({
         />
 
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="relative z-10">
-          {/* EMA ring */}
-          {emaDirection && (
+          {/* Liquidity target ring */}
+          {liquidityTarget && (
             <circle cx={center} cy={center} r={outerRadius + 8} fill="none"
-              stroke={emaDirection === 'above' ? '#10b981' : '#ef4444'}
+              stroke={liquidityTarget === 'bsl' ? '#10b981' : liquidityTarget === 'ssl' ? '#ef4444' : '#f59e0b'}
               strokeWidth={2.5} strokeDasharray="5 3" opacity={0.6} className="animate-pulse-glow" />
           )}
 
