@@ -634,16 +634,18 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {/* Main content: Chart left, Levels, Controls right */}
-        <div className="flex-1 flex min-h-0">
-          {/* TradingView Chart — left panel */}
-          <TradingViewChart className="flex-1 min-w-0 border-r border-zinc-800/30" />
+        {/* Main content: Chart + Controls — responsive */}
+        <div className="flex-1 flex flex-col md:flex-row min-h-0">
+          {/* TradingView Chart — hidden on mobile, shown on desktop */}
+          <TradingViewChart className="hidden md:flex flex-1 min-w-0 border-r border-zinc-800/30" />
 
-          {/* Price Level Reference Panel */}
-          <LevelPanel session={session} />
+          {/* Price Level Reference Panel — hidden on mobile */}
+          <div className="hidden md:block">
+            <LevelPanel session={session} />
+          </div>
 
-          {/* Controls panel — right side, scrollable */}
-          <div className="w-80 lg:w-96 flex-shrink-0 overflow-y-auto px-4 py-4 space-y-4">
+          {/* Controls panel — full width on mobile, sidebar on desktop */}
+          <div className="flex-1 md:flex-none md:w-80 lg:w-96 overflow-y-auto px-4 py-4 space-y-4">
             {/* Wheel with motivational phrases */}
             <div className="flex items-center justify-center gap-2">
               <WheelPhrase side="left" isLocked={isLocked} />

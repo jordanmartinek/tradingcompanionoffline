@@ -74,20 +74,20 @@ function CockpitInner() {
         </div>
       </header>
 
-      {/* Main: Left panels + Chart + Right panels */}
-      <div className="flex-1 flex min-h-0">
-        {/* LEFT RAIL */}
-        <div className="w-56 lg:w-64 flex-shrink-0 overflow-y-auto border-r border-zinc-800/30 px-3 py-3 space-y-5">
+      {/* Main: responsive layout */}
+      <div className="flex-1 flex flex-col md:flex-row min-h-0">
+        {/* LEFT RAIL — full width on mobile */}
+        <div className="md:w-56 lg:w-64 flex-shrink-0 overflow-y-auto border-b md:border-b-0 md:border-r border-zinc-800/30 px-3 py-3 space-y-5">
           <EnvironmentPanel />
           <LevelsPanel />
           <LiquidityPanel />
         </div>
 
-        {/* CENTER — Chart with full drawing tools */}
-        <TradingViewChart className="flex-1 min-w-0" />
+        {/* CENTER — Chart (hidden on mobile) */}
+        <TradingViewChart className="hidden md:flex flex-1 min-w-0" />
 
-        {/* RIGHT RAIL */}
-        <div className="w-56 lg:w-64 flex-shrink-0 overflow-y-auto border-l border-zinc-800/30 px-3 py-3 space-y-5">
+        {/* RIGHT RAIL — full width on mobile */}
+        <div className="md:w-56 lg:w-64 flex-shrink-0 overflow-y-auto border-t md:border-t-0 md:border-l border-zinc-800/30 px-3 py-3 space-y-5">
           <FibCalculator />
           <LocationPanel />
           <ConfirmationPanel />

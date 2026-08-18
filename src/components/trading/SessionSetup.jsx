@@ -49,13 +49,13 @@ export default function SessionSetup({ onBeginSession }) {
   };
 
   return (
-    <div className="h-screen flex overflow-hidden">
-      {/* Left: Chart with drawing tools for pre-market analysis */}
-      <TradingViewChart className="flex-1 min-w-0" />
+    <div className="h-screen flex flex-col md:flex-row overflow-hidden">
+      {/* Left: Chart with drawing tools — hidden on mobile */}
+      <TradingViewChart className="hidden md:flex flex-1 min-w-0" />
 
-      {/* Right: Setup form (scrollable) */}
-      <div className="w-96 lg:w-[420px] flex-shrink-0 overflow-y-auto border-l border-zinc-800/30 p-5">
-        <div className="space-y-6">
+      {/* Right: Setup form (scrollable) — full width on mobile */}
+      <div className="flex-1 md:flex-none md:w-96 lg:w-[420px] overflow-y-auto border-l border-zinc-800/30 p-5">
+        <div className="space-y-6 max-w-md mx-auto">
           {/* Header */}
           <div className="text-center space-y-2">
             <div className="mx-auto w-12 h-12 rounded-full bg-teal-500/10 border border-teal-500/30 flex items-center justify-center">
