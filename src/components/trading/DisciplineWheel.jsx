@@ -1,239 +1,187 @@
 import React, { useMemo } from 'react';
 import { cn } from '@/lib/utils';
 
-const RESULT_COLORS = {
-  win: { fill: '#10b981', glow: '#10b98150', label: 'W' },
-  loss: { fill: '#ef4444', glow: '#ef444450', label: 'L' },
-  breakeven: { fill: '#71717a', glow: '#71717a40', label: 'BE' },
-  scratched: { fill: '#3b82f6', glow: '#3b82f640', label: 'S' },
-};
-
 /**
- * Returns a CSS color string for the wheel's pulsing glow based on execution score.
- * 0-30: red, 30-50: orange, 50-70: yellow, 70-80: green, 80-100: bright teal
+ * Liquidity Hunt Tracker — each segment represents one entry rule.
+ * Segments fill with color as rules are checked off.
+ * At 80%+ = "TRADERS TRAPPED" — ready to enter.
+ * Trade count shown separately beside the wheel.
  */
-function getScoreColor(score) {
-  if (score <= 30) return { r: 239, g: 68, b: 68 };    // red
-  if (score <= 50) return { r: 249, g: 115, b: 22 };   // orange
-  if (score <= 70) return { r: 234, g: 179, b: 8 };    // yellow
-  if (score <= 80) return { r: 34, g: 197, b: 94 };    // green
-  return { r: 45, g: 212, b: 191 };                     // bright teal
-}
 
-function lerpColor(score) {
-  // Smooth interpolation between color stops
-  const stops = [
-    { at: 0,   r: 239, g: 68,  b: 68  },  // red
-    { at: 30,  r: 249, g: 115, b: 22  },  // orange
-    { at: 50,  r: 234, g: 179, b: 8   },  // yellow
-    { at: 70,  r: 34,  g: 197, b: 94  },  // green
-    { at: 80,  r: 45,  g: 212, b: 191 },  // teal
-    { at: 100, r: 45,  g: 212, b: 191 },  // teal (hold)
-  ];
+// Color ramp for segments based on how many are filled
+const SEGMENT_COLORS = [
+  '#ef4444', // first rule — red (just starting)
+  '#f97316', // orange
+  '#eab308', // yellow
+  '#22c55e', // green
+  '#14b8a6', // teal
+  '#2dd4bf', // bright teal (high confluence)
+  '#2dd4bf',
+  '#2dd4bf',
+  '#2dd4bf',
+  '#2dd4bf',
+];
 
-  // Find the two stops we're between
-  let lower = stops[0], upper = stops[1];
-  for (let i = 0; i < stops.length - 1; i++) {
-    if (score >= stops[i].at && score <= stops[i + 1].at) {
-      lower = stops[i];
-      upper = stops[i + 1];
-      break;
-    }
-  }
-
-  const range = upper.at - lower.at || 1;
-  const t = (score - lower.at) / range;
-  const r = Math.round(lower.r + (upper.r - lower.r) * t);
-  const g = Math.round(lower.g + (upper.g - lower.g) * t);
-  const b = Math.round(lower.b + (upper.b - lower.b) * t);
-  return { r, g, b };
+function getSegmentColor(index, total) {
+  // Color progresses from red → teal based on position relative to total
+  const ratio = index / Math.max(1, total - 1);
+  if (ratio <= 0.2) return '#ef4444';
+  if (ratio <= 0.4) return '#f97316';
+  if (ratio <= 0.6) return '#eab308';
+  if (ratio <= 0.8) return '#22c55e';
+  return '#2dd4bf';
 }
 
 export default function DisciplineWheel({
-  maxTrades = 3,
-  trades = [],
-  isLocked = false,
+  rules = [],
   executionScore = 0,
+  trades = [],
+  maxTrades = 3,
   emaDirection = null,
   onSlotClick,
 }) {
-  const size = 280;
+  const entryRules = rules.filter(r => r.category === 'entry');
+  const totalRules = entryRules.length;
+  const checkedCount = entryRules.filter(r => r.enabled).length;
+  const isTrapped = executionScore >= 80;
+
+  const size = 260;
   const center = size / 2;
-  const outerRadius = 115;
-  const innerRadius = 70;
-  const gap = 0.04;
+  const outerRadius = 108;
+  const innerRadius = 64;
+  const gap = 0.05;
 
-  // Compute the pulsing glow color
-  const scoreColor = useMemo(() => lerpColor(executionScore), [executionScore]);
-  const glowRgb = `${scoreColor.r}, ${scoreColor.g}, ${scoreColor.b}`;
+  // Compute glow color based on score
+  const glowColor = useMemo(() => {
+    if (executionScore >= 80) return { r: 45, g: 212, b: 191 };
+    if (executionScore >= 60) return { r: 34, g: 197, b: 94 };
+    if (executionScore >= 40) return { r: 234, g: 179, b: 8 };
+    if (executionScore >= 20) return { r: 249, g: 115, b: 22 };
+    return { r: 239, g: 68, b: 68 };
+  }, [executionScore]);
+  const glowRgb = `${glowColor.r}, ${glowColor.g}, ${glowColor.b}`;
 
-  const segments = [];
-  const anglePerSegment = (2 * Math.PI) / maxTrades;
+  // Build segments — one per entry rule
+  const segments = useMemo(() => {
+    if (totalRules === 0) return [];
+    const anglePerSegment = (2 * Math.PI) / totalRules;
 
-  for (let i = 0; i < maxTrades; i++) {
-    const startAngle = i * anglePerSegment - Math.PI / 2 + gap / 2;
-    const endAngle = (i + 1) * anglePerSegment - Math.PI / 2 - gap / 2;
-    const trade = trades[i] || null;
+    return entryRules.map((rule, i) => {
+      const startAngle = i * anglePerSegment - Math.PI / 2 + gap / 2;
+      const endAngle = (i + 1) * anglePerSegment - Math.PI / 2 - gap / 2;
 
-    const x1Outer = center + outerRadius * Math.cos(startAngle);
-    const y1Outer = center + outerRadius * Math.sin(startAngle);
-    const x2Outer = center + outerRadius * Math.cos(endAngle);
-    const y2Outer = center + outerRadius * Math.sin(endAngle);
-    const x1Inner = center + innerRadius * Math.cos(endAngle);
-    const y1Inner = center + innerRadius * Math.sin(endAngle);
-    const x2Inner = center + innerRadius * Math.cos(startAngle);
-    const y2Inner = center + innerRadius * Math.sin(startAngle);
+      const x1O = center + outerRadius * Math.cos(startAngle);
+      const y1O = center + outerRadius * Math.sin(startAngle);
+      const x2O = center + outerRadius * Math.cos(endAngle);
+      const y2O = center + outerRadius * Math.sin(endAngle);
+      const x1I = center + innerRadius * Math.cos(endAngle);
+      const y1I = center + innerRadius * Math.sin(endAngle);
+      const x2I = center + innerRadius * Math.cos(startAngle);
+      const y2I = center + innerRadius * Math.sin(startAngle);
 
-    const largeArc = anglePerSegment - gap > Math.PI ? 1 : 0;
+      const largeArc = anglePerSegment - gap > Math.PI ? 1 : 0;
+      const path = `M ${x1O} ${y1O} A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${x2O} ${y2O} L ${x1I} ${y1I} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x2I} ${y2I} Z`;
 
-    const path = [
-      `M ${x1Outer} ${y1Outer}`,
-      `A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${x2Outer} ${y2Outer}`,
-      `L ${x1Inner} ${y1Inner}`,
-      `A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${x2Inner} ${y2Inner}`,
-      'Z',
-    ].join(' ');
+      const midAngle = (startAngle + endAngle) / 2;
+      const labelRadius = (outerRadius + innerRadius) / 2;
+      const labelX = center + labelRadius * Math.cos(midAngle);
+      const labelY = center + labelRadius * Math.sin(midAngle);
 
-    const midAngle = (startAngle + endAngle) / 2;
-    const labelRadius = (outerRadius + innerRadius) / 2;
-    const labelX = center + labelRadius * Math.cos(midAngle);
-    const labelY = center + labelRadius * Math.sin(midAngle);
+      return { path, rule, labelX, labelY, color: getSegmentColor(i, totalRules) };
+    });
+  }, [entryRules, totalRules]);
 
-    segments.push({ path, trade, index: i, labelX, labelY });
-  }
-
-  const completedTrades = trades.filter(Boolean).length;
+  const completedTrades = trades.length;
 
   return (
-    <div className="relative flex items-center justify-center">
-      {/* Pulsing glow ring behind the wheel */}
-      <div
-        className="absolute rounded-full animate-pulse-glow"
-        style={{
-          width: size + 40,
-          height: size + 40,
-          background: `radial-gradient(circle, rgba(${glowRgb}, 0.15) 0%, rgba(${glowRgb}, 0.05) 50%, transparent 70%)`,
-          boxShadow: `0 0 60px rgba(${glowRgb}, 0.2), 0 0 120px rgba(${glowRgb}, 0.1)`,
-          transition: 'background 0.8s ease, box-shadow 0.8s ease',
-        }}
-      />
-
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        className="relative z-10"
-      >
-        {/* Outer score-colored ring */}
-        <circle
-          cx={center}
-          cy={center}
-          r={outerRadius + 6}
-          fill="none"
-          stroke={`rgba(${glowRgb}, 0.4)`}
-          strokeWidth={2.5}
-          strokeDasharray="4 3"
-          className="animate-pulse-glow"
-          style={{ transition: 'stroke 0.8s ease' }}
+    <div className="relative flex flex-col items-center">
+      {/* Wheel with glow */}
+      <div className="relative">
+        {/* Pulsing glow */}
+        <div
+          className="absolute rounded-full animate-pulse-glow"
+          style={{
+            width: size + 30,
+            height: size + 30,
+            top: -15,
+            left: -15,
+            background: `radial-gradient(circle, rgba(${glowRgb}, 0.12) 0%, transparent 70%)`,
+            boxShadow: `0 0 40px rgba(${glowRgb}, 0.15)`,
+            transition: 'all 0.8s ease',
+          }}
         />
 
-        {/* EMA direction ring */}
-        {emaDirection && (
-          <circle
-            cx={center}
-            cy={center}
-            r={outerRadius + 12}
-            fill="none"
-            stroke={emaDirection === 'above' ? '#10b981' : '#ef4444'}
-            strokeWidth={3}
-            strokeDasharray="6 4"
-            opacity={0.7}
-            className="animate-pulse-glow"
-          />
-        )}
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="relative z-10">
+          {/* EMA ring */}
+          {emaDirection && (
+            <circle cx={center} cy={center} r={outerRadius + 8} fill="none"
+              stroke={emaDirection === 'above' ? '#10b981' : '#ef4444'}
+              strokeWidth={2.5} strokeDasharray="5 3" opacity={0.6} className="animate-pulse-glow" />
+          )}
 
-        {/* Segments */}
-        {segments.map(({ path, trade, index, labelX, labelY }) => {
-          const result = trade?.result;
-          const colors = result ? RESULT_COLORS[result] : null;
-          const isEmpty = !trade;
-
-          return (
-            <g
-              key={index}
-              onClick={() => {
-                if (!isLocked && trade) onSlotClick?.(index);
-              }}
-              className={cn(
-                !isLocked && trade && 'cursor-pointer',
-                isLocked && 'cursor-not-allowed'
-              )}
-            >
-              {colors && (
-                <path d={path} fill={colors.glow} stroke={colors.fill} strokeWidth={1.5} />
-              )}
+          {/* Segments — one per rule */}
+          {segments.map(({ path, rule, labelX, labelY, color }, idx) => (
+            <g key={rule.id}>
               <path
                 d={path}
-                fill={isEmpty ? 'rgba(63, 63, 70, 0.25)' : colors?.fill || '#3f3f46'}
-                stroke={isEmpty ? '#3f3f46' : colors?.fill || '#52525b'}
-                strokeWidth={isEmpty ? 0.5 : 2}
-                opacity={isEmpty ? 0.5 : 0.9}
+                fill={rule.enabled ? color : 'rgba(39, 39, 42, 0.3)'}
+                stroke={rule.enabled ? color : '#27272a'}
+                strokeWidth={rule.enabled ? 1.5 : 0.5}
+                opacity={rule.enabled ? 0.85 : 0.4}
                 className="transition-all duration-300"
               />
-              {colors && (
-                <text
-                  x={labelX} y={labelY}
-                  textAnchor="middle" dominantBaseline="central"
-                  fill="white" fontSize="13" fontWeight="bold"
-                  className="select-none"
-                >
-                  {colors.label}
-                </text>
-              )}
-              {isEmpty && (
-                <text
-                  x={labelX} y={labelY}
-                  textAnchor="middle" dominantBaseline="central"
-                  fill="#52525b" fontSize="11"
-                  className="select-none"
-                >
-                  {index + 1}
-                </text>
-              )}
+              {/* Abbreviated label */}
+              <text
+                x={labelX} y={labelY}
+                textAnchor="middle" dominantBaseline="central"
+                fill={rule.enabled ? '#fff' : '#52525b'}
+                fontSize={totalRules > 6 ? '8' : '9'}
+                className="select-none pointer-events-none"
+              >
+                {rule.title.slice(0, 3).toUpperCase()}
+              </text>
             </g>
-          );
-        })}
+          ))}
 
-        {/* Center */}
-        <circle
-          cx={center} cy={center} r={innerRadius - 8}
-          fill="rgba(9, 9, 11, 0.9)"
-          stroke={`rgba(${glowRgb}, 0.3)`}
-          strokeWidth={1.5}
-          style={{ transition: 'stroke 0.8s ease' }}
-        />
+          {/* Center circle */}
+          <circle cx={center} cy={center} r={innerRadius - 6}
+            fill="rgba(9, 9, 11, 0.9)"
+            stroke={`rgba(${glowRgb}, 0.3)`}
+            strokeWidth={1.5}
+            style={{ transition: 'stroke 0.8s ease' }}
+          />
 
-        {isLocked ? (
-          <>
-            <svg x={center - 12} y={center - 16} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={`rgb(${glowRgb})`} strokeWidth="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
-            <text x={center} y={center + 20} textAnchor="middle" fill={`rgb(${glowRgb})`} fontSize="10" fontWeight="600" className="select-none">
-              {executionScore}%
-            </text>
-          </>
-        ) : (
-          <>
-            <text x={center} y={center - 4} textAnchor="middle" fill="#fafafa" fontSize="26" fontWeight="bold" className="select-none tabular-nums">
-              {completedTrades}/{maxTrades}
-            </text>
-            <text x={center} y={center + 16} textAnchor="middle" fill={`rgb(${glowRgb})`} fontSize="10" fontWeight="500" className="select-none">
-              {executionScore}%
-            </text>
-          </>
-        )}
-      </svg>
+          {/* Center content */}
+          {isTrapped ? (
+            <>
+              <text x={center} y={center - 8} textAnchor="middle" fill="#2dd4bf" fontSize="9" fontWeight="700" className="select-none uppercase">
+                Traders
+              </text>
+              <text x={center} y={center + 6} textAnchor="middle" fill="#2dd4bf" fontSize="9" fontWeight="700" className="select-none uppercase">
+                Trapped
+              </text>
+              <text x={center} y={center + 22} textAnchor="middle" fill="#2dd4bf" fontSize="10" fontWeight="600" className="select-none tabular-nums">
+                {executionScore}%
+              </text>
+            </>
+          ) : (
+            <>
+              <text x={center} y={center - 4} textAnchor="middle" fill="#fafafa" fontSize="22" fontWeight="bold" className="select-none tabular-nums">
+                {checkedCount}/{totalRules}
+              </text>
+              <text x={center} y={center + 16} textAnchor="middle" fill={`rgb(${glowRgb})`} fontSize="10" className="select-none">
+                {executionScore}%
+              </text>
+            </>
+          )}
+        </svg>
+      </div>
+
+      {/* Trade count — below wheel */}
+      <div className="mt-3 flex items-center gap-1.5">
+        <span className="text-[10px] text-zinc-500">Trades:</span>
+        <span className="text-xs font-mono tabular-nums text-zinc-300">{completedTrades}/{maxTrades}</span>
+      </div>
     </div>
   );
 }

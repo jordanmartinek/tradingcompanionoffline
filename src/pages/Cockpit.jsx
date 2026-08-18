@@ -27,7 +27,7 @@ function CockpitInner() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-zinc-950 overflow-hidden">
+    <div className="h-screen flex flex-col bg-zinc-950 overflow-hidden md:overflow-hidden">
       {/* Top Bar */}
       <header className="flex items-center justify-between px-3 py-1.5 border-b border-zinc-800/50 flex-shrink-0 bg-zinc-900/50">
         <div className="flex items-center gap-3">
@@ -75,9 +75,9 @@ function CockpitInner() {
       </header>
 
       {/* Main: responsive layout */}
-      <div className="flex-1 flex flex-col md:flex-row min-h-0">
+      <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-y-auto md:overflow-hidden">
         {/* LEFT RAIL — full width on mobile */}
-        <div className="md:w-56 lg:w-64 flex-shrink-0 overflow-y-auto border-b md:border-b-0 md:border-r border-zinc-800/30 px-3 py-3 space-y-5">
+        <div className="md:w-56 lg:w-64 flex-shrink-0 md:overflow-y-auto border-b md:border-b-0 md:border-r border-zinc-800/30 px-3 py-3 space-y-5">
           <EnvironmentPanel />
           <LevelsPanel />
           <LiquidityPanel />
@@ -87,7 +87,7 @@ function CockpitInner() {
         <TradingViewChart className="hidden md:flex flex-1 min-w-0" />
 
         {/* RIGHT RAIL — full width on mobile */}
-        <div className="md:w-56 lg:w-64 flex-shrink-0 overflow-y-auto border-t md:border-t-0 md:border-l border-zinc-800/30 px-3 py-3 space-y-5">
+        <div className="md:w-56 lg:w-64 flex-shrink-0 md:overflow-y-auto border-t md:border-t-0 md:border-l border-zinc-800/30 px-3 py-3 space-y-5">
           <FibCalculator />
           <LocationPanel />
           <ConfirmationPanel />

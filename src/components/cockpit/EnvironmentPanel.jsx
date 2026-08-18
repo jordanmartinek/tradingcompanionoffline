@@ -67,28 +67,16 @@ export default function EnvironmentPanel() {
           </div>
         </div>
 
-        {/* GEX Walls */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <label className="text-[10px] text-zinc-500 uppercase">Call Wall</label>
-            <input
-              type="number"
-              value={context.gex_call_wall}
-              onChange={(e) => handleChange('gex_call_wall', e.target.value)}
-              className="w-full bg-zinc-900/50 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-300 tabular-nums focus:outline-none focus:border-teal-400/50"
-              placeholder="0"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[10px] text-zinc-500 uppercase">Put Wall</label>
-            <input
-              type="number"
-              value={context.gex_put_wall}
-              onChange={(e) => handleChange('gex_put_wall', e.target.value)}
-              className="w-full bg-zinc-900/50 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-300 tabular-nums focus:outline-none focus:border-teal-400/50"
-              placeholder="0"
-            />
-          </div>
+        {/* GEX — gamma flip only */}
+        <div className="space-y-1">
+          <label className="text-[10px] text-zinc-500 uppercase">Gamma Flip Level</label>
+          <input
+            type="number"
+            value={context.gex_call_wall}
+            onChange={(e) => handleChange('gex_call_wall', e.target.value)}
+            className="w-full bg-zinc-900/50 border border-zinc-800 rounded px-2 py-1 text-xs text-zinc-300 tabular-nums focus:outline-none focus:border-teal-400/50"
+            placeholder="0"
+          />
         </div>
 
         {/* Scenarios */}

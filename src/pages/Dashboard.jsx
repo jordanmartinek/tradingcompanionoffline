@@ -656,10 +656,10 @@ export default function Dashboard() {
                 </div>
 
                 <DisciplineWheel
-                  maxTrades={session?.max_trades || 3}
-                  trades={trades}
-                  isLocked={isLocked}
+                  rules={rules}
                   executionScore={executionScore}
+                  trades={trades}
+                  maxTrades={session?.max_trades || 3}
                   emaDirection={emaDirection}
                   onSlotClick={handleSlotClick}
                 />
