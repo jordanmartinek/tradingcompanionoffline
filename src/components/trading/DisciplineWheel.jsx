@@ -97,17 +97,17 @@ export default function DisciplineWheel({
     <div className="relative flex flex-col items-center">
       {/* Wheel with glow */}
       <div className="relative">
-        {/* Pulsing glow */}
+        {/* Pulsing glow — intensity scales with progress */}
         <div
           className="absolute rounded-full animate-pulse-glow"
           style={{
-            width: size + 30,
-            height: size + 30,
-            top: -15,
-            left: -15,
-            background: `radial-gradient(circle, rgba(${glowRgb}, 0.12) 0%, transparent 70%)`,
-            boxShadow: `0 0 40px rgba(${glowRgb}, 0.15)`,
-            transition: 'all 0.8s ease',
+            width: size + 50,
+            height: size + 50,
+            top: -25,
+            left: -25,
+            background: `radial-gradient(circle, rgba(${glowRgb}, ${0.05 + (executionScore / 100) * 0.35}) 0%, rgba(${glowRgb}, ${(executionScore / 100) * 0.15}) 40%, transparent 70%)`,
+            boxShadow: `0 0 ${20 + (executionScore / 100) * 80}px rgba(${glowRgb}, ${0.1 + (executionScore / 100) * 0.5}), 0 0 ${40 + (executionScore / 100) * 120}px rgba(${glowRgb}, ${(executionScore / 100) * 0.25})`,
+            transition: 'all 0.6s ease',
           }}
         />
 
@@ -116,7 +116,7 @@ export default function DisciplineWheel({
           {liquidityTarget && (
             <circle cx={center} cy={center} r={outerRadius + 8} fill="none"
               stroke={liquidityTarget === 'bsl' ? '#10b981' : liquidityTarget === 'ssl' ? '#ef4444' : '#f59e0b'}
-              strokeWidth={2.5} strokeDasharray="5 3" opacity={0.6} className="animate-pulse-glow" />
+              strokeWidth={2.5 + (executionScore / 100) * 1.5} strokeDasharray="5 3" opacity={0.4 + (executionScore / 100) * 0.5} className="animate-pulse-glow" />
           )}
 
           {/* Segments — one per rule */}
@@ -126,8 +126,9 @@ export default function DisciplineWheel({
                 d={path}
                 fill={rule.enabled ? color : 'rgba(39, 39, 42, 0.3)'}
                 stroke={rule.enabled ? color : '#27272a'}
-                strokeWidth={rule.enabled ? 1.5 : 0.5}
-                opacity={rule.enabled ? 0.85 : 0.4}
+                strokeWidth={rule.enabled ? 2 : 0.5}
+                opacity={rule.enabled ? 0.9 + (executionScore / 100) * 0.1 : 0.35}
+                filter={rule.enabled ? `drop-shadow(0 0 ${3 + (executionScore / 100) * 6}px ${color})` : 'none'}
                 className="transition-all duration-300"
               />
               {/* Abbreviated label */}
@@ -146,9 +147,9 @@ export default function DisciplineWheel({
           {/* Center circle */}
           <circle cx={center} cy={center} r={innerRadius - 6}
             fill="rgba(9, 9, 11, 0.9)"
-            stroke={`rgba(${glowRgb}, 0.3)`}
-            strokeWidth={1.5}
-            style={{ transition: 'stroke 0.8s ease' }}
+            stroke={`rgba(${glowRgb}, ${0.15 + (executionScore / 100) * 0.6})`}
+            strokeWidth={1.5 + (executionScore / 100) * 1}
+            style={{ transition: 'stroke 0.6s ease, stroke-width 0.6s ease' }}
           />
 
           {/* Center content */}
