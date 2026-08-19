@@ -9,9 +9,14 @@ import { affirmations } from '@/shared/tradingConcepts';
 import { getTemplates } from '@/lib/templates';
 import NotificationSettings from '@/components/trading/NotificationSettings';
 import TradingViewChart from '@/components/trading/TradingViewChart';
+import EnvironmentPanel from '@/components/cockpit/EnvironmentPanel';
+import LevelsPanel from '@/components/cockpit/LevelsPanel';
+import LiquidityPanel from '@/components/cockpit/LiquidityPanel';
+import FibCalculator from '@/components/cockpit/FibCalculator';
+import { CockpitProvider } from '@/lib/cockpitStore';
 import { cn } from '@/lib/utils';
 
-export default function SessionSetup({ onBeginSession }) {
+function SetupInner({ onBeginSession }) {
   const [dailyObjective, setDailyObjective] = useState('');
   const [preMarketNotes, setPreMarketNotes] = useState('');
   const [dailyAffirmation, setDailyAffirmation] = useState(affirmations[0]);
@@ -20,13 +25,7 @@ export default function SessionSetup({ onBeginSession }) {
   const [maxSessionMinutes, setMaxSessionMinutes] = useState(180);
   const [lossCooldownSeconds, setLossCooldownSeconds] = useState(300);
   const [ritualMinutes, setRitualMinutes] = useState(5);
-
-  // Pre-trade analysis questions
-  const [liquidityPools, setLiquidityPools] = useState('');
-  const [likelyTarget, setLikelyTarget] = useState('');
-  const [gexState, setGexState] = useState('');
-  const [valueAreas, setValueAreas] = useState('');
-  const [openLocation, setOpenLocation] = useState('');
+  const [activeTab, setActiveTab] = useState('environment'); // mobile tab
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -39,247 +38,147 @@ export default function SessionSetup({ onBeginSession }) {
       max_session_minutes: maxSessionMinutes,
       loss_cooldown_seconds: lossCooldownSeconds,
       ritual_minutes: ritualMinutes,
-      // Pre-trade analysis
-      liquidity_pools: liquidityPools,
-      likely_target: likelyTarget,
-      gex_state: gexState,
-      value_areas: valueAreas,
-      open_location: openLocation,
     });
   };
 
   return (
-    <div className="h-screen flex flex-col md:flex-row overflow-hidden">
-      {/* Left: Chart with drawing tools — hidden on mobile */}
-      <TradingViewChart className="hidden md:flex flex-1 min-w-0" />
-
-      {/* Right: Setup form (scrollable) — full width on mobile */}
-      <div className="flex-1 md:flex-none md:w-96 lg:w-[420px] overflow-y-auto border-l border-zinc-800/30 p-5">
-        <div className="space-y-6 max-w-md mx-auto">
-          {/* Header */}
-          <div className="text-center space-y-2">
-            <div className="mx-auto w-12 h-12 rounded-full bg-teal-500/10 border border-teal-500/30 flex items-center justify-center">
-              <svg className="w-6 h-6 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <h1 className="text-lg font-bold text-zinc-100">Begin Session</h1>
-            <p className="text-zinc-500 text-xs">Draw your levels on the chart. Set your intention.</p>
+    <div className="h-screen flex flex-col overflow-hidden">
+      {/* Top bar */}
+      <header className="flex items-center justify-between px-4 py-2 border-b border-zinc-800/30 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-teal-500/10 border border-teal-500/30 flex items-center justify-center">
+            <svg className="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
           </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Template Quick-Start */}
-          <div className="space-y-1.5">
-            <Label>Quick Start Template</Label>
-            <div className="flex gap-2 flex-wrap">
-              {getTemplates().map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => {
-                    setMaxTrades(t.max_trades);
-                    setDailyLossLimit(t.daily_loss_limit);
-                    setMaxSessionMinutes(t.max_session_minutes);
-                    setLossCooldownSeconds(t.loss_cooldown_seconds);
-                    setRitualMinutes(t.ritual_minutes);
-                  }}
-                  className="px-3 py-1.5 rounded-md border border-zinc-700 bg-zinc-800/50 text-xs text-zinc-400 hover:border-teal-500/50 hover:text-teal-300 transition-all"
-                >
-                  {t.name}
-                </button>
-              ))}
-            </div>
+          <div>
+            <h1 className="text-sm font-bold text-zinc-100">Pre-Trade Planning</h1>
+            <p className="text-[10px] text-zinc-500">Mark levels, analyze environment, then begin.</p>
           </div>
+        </div>
+        <Button onClick={handleSubmit} size="sm" className="text-xs">
+          Begin Session →
+        </Button>
+      </header>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="objective">Daily Objective</Label>
-            <Input
-              id="objective"
-              placeholder="e.g., 2 A+ setups, follow rules perfectly"
-              value={dailyObjective}
-              onChange={(e) => setDailyObjective(e.target.value)}
-            />
-          </div>
+      {/* Mobile tab selector */}
+      <div className="md:hidden flex border-b border-zinc-800/30 overflow-x-auto">
+        {['environment', 'chart', 'config'].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={cn(
+              'flex-1 px-3 py-2 text-[10px] font-medium uppercase tracking-wider transition-colors',
+              activeTab === tab ? 'text-teal-400 border-b-2 border-teal-400' : 'text-zinc-500'
+            )}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="notes">Pre-Market Notes</Label>
-            <Textarea
-              id="notes"
-              placeholder="Bias, key levels, context..."
-              value={preMarketNotes}
-              onChange={(e) => setPreMarketNotes(e.target.value)}
-              className="min-h-[50px]"
-            />
-          </div>
+      {/* Main content — 3 columns on desktop */}
+      <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
+        {/* LEFT: Environment + Levels + Liquidity + Fib */}
+        <div className={cn(
+          'md:w-64 lg:w-72 flex-shrink-0 overflow-y-auto border-r border-zinc-800/30 px-3 py-3 space-y-5',
+          activeTab !== 'environment' && 'hidden md:block'
+        )}>
+          <EnvironmentPanel />
+          <LevelsPanel />
+          <LiquidityPanel />
+          <FibCalculator />
+        </div>
 
-          {/* Pre-Trade Analysis Questions */}
-          <div className="space-y-4 p-4 rounded-lg bg-zinc-800/20 border border-zinc-800/50">
-            <p className="text-[11px] text-teal-400/80 uppercase tracking-wider font-medium">Pre-Trade Analysis</p>
+        {/* CENTER: Chart */}
+        <div className={cn(
+          'flex-1 min-w-0 min-h-0',
+          activeTab !== 'chart' && 'hidden md:flex'
+        )}>
+          <TradingViewChart className="w-full h-full" />
+        </div>
 
+        {/* RIGHT: Session config + objectives */}
+        <div className={cn(
+          'md:w-72 lg:w-80 flex-shrink-0 overflow-y-auto border-l border-zinc-800/30 px-4 py-4',
+          activeTab !== 'config' && 'hidden md:block'
+        )}>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Templates */}
             <div className="space-y-1.5">
-              <Label htmlFor="liquidity">Where are the closest major liquidity pools?</Label>
-              <Textarea
-                id="liquidity"
-                placeholder="e.g., BSL at 5480, SSL at 5420, equal lows at 5395..."
-                value={liquidityPools}
-                onChange={(e) => setLiquidityPools(e.target.value)}
-                className="min-h-[40px]"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="target">Which one is price likely to attack first?</Label>
-              <Input
-                id="target"
-                placeholder="e.g., SSL at 5420 — downside sweep before reversal"
-                value={likelyTarget}
-                onChange={(e) => setLikelyTarget(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="gex">Is the market in a GEX positive or negative state?</Label>
-              <div className="flex gap-2">
-                {['Positive', 'Negative', 'Neutral/Unknown'].map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => setGexState(opt)}
-                    className={cn(
-                      'flex-1 px-3 py-2 rounded-md border text-xs font-medium transition-all',
-                      gexState === opt
-                        ? opt === 'Positive' ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-300'
-                        : opt === 'Negative' ? 'border-red-500/50 bg-red-500/10 text-red-300'
-                        : 'border-zinc-500/50 bg-zinc-500/10 text-zinc-300'
-                        : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
-                    )}
-                  >
-                    {opt}
-                  </button>
+              <Label className="text-[10px]">Template</Label>
+              <div className="flex gap-1.5 flex-wrap">
+                {getTemplates().map((t) => (
+                  <button key={t.id} type="button"
+                    onClick={() => { setMaxTrades(t.max_trades); setDailyLossLimit(t.daily_loss_limit); setMaxSessionMinutes(t.max_session_minutes); setLossCooldownSeconds(t.loss_cooldown_seconds); setRitualMinutes(t.ritual_minutes); }}
+                    className="px-2 py-1 rounded border border-zinc-700 bg-zinc-800/50 text-[10px] text-zinc-400 hover:border-teal-500/50 hover:text-teal-300 transition-all"
+                  >{t.name}</button>
                 ))}
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="va">Where are your value areas?</Label>
-              <Textarea
-                id="va"
-                placeholder="e.g., VAH: 5465, POC: 5445, VAL: 5425..."
-                value={valueAreas}
-                onChange={(e) => setValueAreas(e.target.value)}
-                className="min-h-[40px]"
-              />
+            {/* Objective */}
+            <div className="space-y-1">
+              <Label htmlFor="objective" className="text-[10px]">Objective</Label>
+              <Input id="objective" placeholder="e.g., 2 A+ setups only" value={dailyObjective} onChange={(e) => setDailyObjective(e.target.value)} className="h-8 text-xs" />
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="openLoc">Has price opened inside or outside the previous day's value area?</Label>
-              <div className="flex gap-2">
-                {['Inside VA', 'Above VA', 'Below VA'].map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => setOpenLocation(opt)}
-                    className={cn(
-                      'flex-1 px-3 py-2 rounded-md border text-xs font-medium transition-all',
-                      openLocation === opt
-                        ? 'border-teal-500/50 bg-teal-500/10 text-teal-300'
-                        : 'border-zinc-700 bg-zinc-800/50 text-zinc-500 hover:border-zinc-600'
-                    )}
-                  >
-                    {opt}
-                  </button>
-                ))}
+            {/* Notes */}
+            <div className="space-y-1">
+              <Label htmlFor="notes" className="text-[10px]">Pre-Market Notes</Label>
+              <Textarea id="notes" placeholder="Bias, context..." value={preMarketNotes} onChange={(e) => setPreMarketNotes(e.target.value)} className="min-h-[40px] text-xs" />
+            </div>
+
+            {/* Affirmation */}
+            <div className="space-y-1">
+              <Label className="text-[10px]">Affirmation</Label>
+              <Select value={dailyAffirmation} onChange={(e) => setDailyAffirmation(e.target.value)} className="h-8 text-xs">
+                {affirmations.map((a) => <SelectOption key={a} value={a}>{a}</SelectOption>)}
+              </Select>
+            </div>
+
+            {/* Settings grid */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-[10px]">Max Trades</Label>
+                <Input type="number" min={1} max={5} value={maxTrades} onChange={(e) => setMaxTrades(Number(e.target.value) || 3)} className="h-8 text-xs" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px]">Loss Limit ($)</Label>
+                <Input type="number" min={0} step={50} value={dailyLossLimit || ''} onChange={(e) => setDailyLossLimit(Number(e.target.value) || 0)} className="h-8 text-xs" placeholder="0=off" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px]">Session (min)</Label>
+                <Input type="number" min={15} max={480} step={15} value={maxSessionMinutes} onChange={(e) => setMaxSessionMinutes(Number(e.target.value) || 180)} className="h-8 text-xs" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px]">Cooldown (sec)</Label>
+                <Input type="number" min={0} max={600} step={30} value={lossCooldownSeconds} onChange={(e) => setLossCooldownSeconds(Number(e.target.value) || 0)} className="h-8 text-xs" placeholder="0=off" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-[10px]">Ritual (min)</Label>
+                <Input type="number" min={1} max={10} value={ritualMinutes} onChange={(e) => setRitualMinutes(Number(e.target.value) || 5)} className="h-8 text-xs" />
               </div>
             </div>
-          </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="affirmation">Affirmation</Label>
-            <Select
-              id="affirmation"
-              value={dailyAffirmation}
-              onChange={(e) => setDailyAffirmation(e.target.value)}
-            >
-              {affirmations.map((a) => (
-                <SelectOption key={a} value={a}>{a}</SelectOption>
-              ))}
-            </Select>
-          </div>
+            {/* Notifications */}
+            <NotificationSettings />
 
-          <div className="space-y-1.5">
-            <Label>Max Trades</Label>
-            <Slider value={maxTrades} min={1} max={5} step={1} onChange={setMaxTrades} />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="lossLimit">Daily Loss Limit ($)</Label>
-            <Input
-              id="lossLimit"
-              type="number"
-              min={0}
-              step={50}
-              placeholder="0 = no limit"
-              value={dailyLossLimit || ''}
-              onChange={(e) => setDailyLossLimit(Number(e.target.value) || 0)}
-            />
-            <p className="text-[11px] text-zinc-600">Locks trading when cumulative PnL hits this. 0 = off.</p>
-          </div>
-
-          {/* Session Time Limit */}
-          <div className="space-y-1.5">
-            <Label htmlFor="sessionTime">Max Session Length (minutes)</Label>
-            <Input
-              id="sessionTime"
-              type="number"
-              min={15}
-              max={480}
-              step={15}
-              value={maxSessionMinutes}
-              onChange={(e) => setMaxSessionMinutes(Number(e.target.value) || 180)}
-            />
-            <p className="text-[11px] text-zinc-600">Session auto-ends when this time is reached. No override.</p>
-          </div>
-
-          {/* Post-Loss Cooldown */}
-          <div className="space-y-1.5">
-            <Label htmlFor="cooldown">Post-Loss Cooldown (seconds)</Label>
-            <Input
-              id="cooldown"
-              type="number"
-              min={0}
-              max={600}
-              step={30}
-              value={lossCooldownSeconds}
-              onChange={(e) => setLossCooldownSeconds(Number(e.target.value) || 0)}
-            />
-            <p className="text-[11px] text-zinc-600">After logging a loss, rules are hidden for this long. 0 = off.</p>
-          </div>
-
-          {/* Pre-Market Ritual */}
-          <div className="space-y-1.5">
-            <Label htmlFor="ritual">Pre-Market Ritual (minutes)</Label>
-            <Input
-              id="ritual"
-              type="number"
-              min={1}
-              max={10}
-              step={1}
-              value={ritualMinutes}
-              onChange={(e) => setRitualMinutes(Math.max(1, Math.min(10, Number(e.target.value) || 5)))}
-            />
-            <p className="text-[11px] text-zinc-600">Forced preparation time before trading begins. Cannot be skipped.</p>
-          </div>
-
-          {/* Notifications */}
-          <NotificationSettings />
-
-          <Button type="submit" className="w-full h-11 text-sm font-semibold mt-2">
-            Begin Session
-          </Button>
-        </form>
+            {/* Begin */}
+            <Button type="submit" className="w-full h-10 text-sm font-semibold">
+              Begin Session
+            </Button>
+          </form>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SessionSetup({ onBeginSession }) {
+  return (
+    <CockpitProvider>
+      <SetupInner onBeginSession={onBeginSession} />
+    </CockpitProvider>
   );
 }
