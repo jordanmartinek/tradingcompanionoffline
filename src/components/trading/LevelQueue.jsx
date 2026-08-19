@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { playSweepSound } from '@/lib/sweepSound';
 
 /**
  * Multi-Level Queue — watch multiple liquidity levels simultaneously.
@@ -51,6 +52,7 @@ export default function LevelQueue({ onLevelSwept }) {
     setQueue(updated);
     saveQueue(updated);
     if (status === 'swept') {
+      playSweepSound();
       const level = updated.find(l => l.id === id);
       onLevelSwept?.(level);
     }
@@ -115,7 +117,11 @@ export default function LevelQueue({ onLevelSwept }) {
         {queue.map((level) => {
           const style = STATUS_STYLES[level.status];
           return (
-            <div key={level.id} className={cn('flex items-center gap-1.5 px-2 py-1.5 rounded border group', style.bg, style.border)}>
+            <div key={level.id} className={cn(
+              'flex items-center gap-1.5 px-2 py-1.5 rounded border group transition-all',
+              style.bg, style.border,
+              level.status === 'sweeping' && 'animate-pulse-glow'
+            )}>
               {/* Side indicator */}
               <span className={cn('text-[9px] font-bold', level.side === 'bsl' ? 'text-emerald-400' : 'text-red-400')}>
                 {level.side === 'bsl' ? '▲' : '▼'}

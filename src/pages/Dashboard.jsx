@@ -19,6 +19,11 @@ import LiquidityTargetToggle from '@/components/trading/LiquidityTargetToggle';
 import KillZoneBadge from '@/components/trading/KillZoneBadge';
 import LevelQueue from '@/components/trading/LevelQueue';
 import DisplacementTracker from '@/components/trading/DisplacementTracker';
+import PipelineBar from '@/components/trading/PipelineBar';
+import SessionSummaryCard from '@/components/trading/SessionSummaryCard';
+import CompactModeToggle from '@/components/trading/CompactModeToggle';
+import { playTrappedSound } from '@/lib/sweepSound';
+import { getCarryOverLevels, importCarryOverLevels, saveUnsweptLevels } from '@/lib/levelCarryOver';
 import ExecuteConfirmDialog from '@/components/trading/ExecuteConfirmDialog';
 import TradeDetail from '@/components/trading/TradeDetail';
 import SessionTimer from '@/components/trading/SessionTimer';
@@ -99,8 +104,11 @@ export default function Dashboard() {
 
   const [emaDirection, setEmaDirection] = useState(null);  // kept for wheel compat
   const [liquidityTarget, setLiquidityTarget] = useState(null); // 'bsl' | 'ssl' | 'both' | null
-  const [levelSwept, setLevelSwept] = useState(false); // true when a level in queue is marked "swept"
+  const [levelSwept, setLevelSwept] = useState(false);
   const [displacementConfirmed, setDisplacementConfirmed] = useState(false);
+  const [compactMode, setCompactMode] = useState(false);
+  const [showCarryOver, setShowCarryOver] = useState(false);
+  const [carryOverLevels, setCarryOverLevels] = useState([]);
   const [showExecuteDialog, setShowExecuteDialog] = useState(false);
   const [showTradeDetail, setShowTradeDetail] = useState(false);
   const [activeSlot, setActiveSlot] = useState(null);
@@ -315,6 +323,15 @@ export default function Dashboard() {
     prevEnabledCountRef.current = enabledEntryCount;
   }, [enabledEntryCount]);
 
+  // Play trapped sound when execution score hits 80%
+  const prevScoreRef = React.useRef(executionScore);
+  useEffect(() => {
+    if (executionScore >= 80 && prevScoreRef.current < 80) {
+      playTrappedSound();
+    }
+    prevScoreRef.current = executionScore;
+  }, [executionScore]);
+
   // Cooldown countdown timer
   useEffect(() => {
     if (!cooldownUntil) return;
@@ -357,6 +374,12 @@ export default function Dashboard() {
   useEffect(() => {
     if (phase !== 'trading') return;
     const cleanup = startNotificationScheduler(rules);
+    // Check for carry-over levels
+    const carryOver = getCarryOverLevels();
+    if (carryOver.length > 0) {
+      setCarryOverLevels(carryOver);
+      setShowCarryOver(true);
+    }
     return cleanup;
   }, [phase, rules]);
 
@@ -465,6 +488,9 @@ export default function Dashboard() {
   const handleEndSession = async () => {
     // Guard: don't re-end an already-ended session
     if (!session || session.status === 'ended') return;
+
+    // Save unswept levels for carry-over
+    saveUnsweptLevels();
 
     const endTime = new Date().toISOString();
     const lockUntil = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
@@ -630,8 +656,39 @@ export default function Dashboard() {
             <Button variant="ghost" size="sm" onClick={() => setShowEndDialog(true)} className="text-xs text-zinc-500 hover:text-red-400">
               End
             </Button>
+            <CompactModeToggle compact={compactMode} onToggle={() => setCompactMode(!compactMode)} />
           </div>
         </header>
+
+        {/* Pipeline Status Bar */}
+        <div className="px-4 py-1.5 border-b border-zinc-800/20">
+          <PipelineBar
+            levelQueued={levelSwept || displacementConfirmed || executionScore > 0}
+            sweeping={levelSwept || displacementConfirmed}
+            swept={levelSwept}
+            displacementConfirmed={displacementConfirmed}
+            rulesScore={executionScore}
+            trapped={executionScore >= 80}
+            executed={false}
+          />
+        </div>
+
+        {/* Session Summary Card */}
+        <SessionSummaryCard session={session} />
+
+        {/* Carry-over prompt */}
+        {showCarryOver && carryOverLevels.length > 0 && (
+          <div className="mx-4 mt-2 p-2.5 rounded-lg bg-amber-500/5 border border-amber-500/20 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-amber-300 font-medium">{carryOverLevels.length} level(s) from yesterday</p>
+              <p className="text-[9px] text-zinc-500">Import unswept levels?</p>
+            </div>
+            <div className="flex gap-1.5">
+              <button onClick={() => { importCarryOverLevels(); setShowCarryOver(false); window.location.reload(); }} className="px-2 py-1 rounded text-[9px] bg-teal-400/10 border border-teal-400/40 text-teal-400">Import</button>
+              <button onClick={() => setShowCarryOver(false)} className="px-2 py-1 rounded text-[9px] text-zinc-500 border border-zinc-700">Dismiss</button>
+            </div>
+          </div>
+        )}
 
         {/* Main content: Chart + Controls — responsive */}
         <div className="flex-1 flex flex-col md:flex-row min-h-0">
@@ -654,18 +711,22 @@ export default function Dashboard() {
                   <LiquidityTargetToggle target={liquidityTarget} onChange={setLiquidityTarget} />
                 </div>
 
-                {/* Level Queue */}
-                <div className="mb-3 w-full max-w-xs">
-                  <LevelQueue onLevelSwept={() => setLevelSwept(true)} />
-                </div>
+                {/* Level Queue — hidden in compact mode */}
+                {!compactMode && (
+                  <div className="mb-3 w-full max-w-xs">
+                    <LevelQueue onLevelSwept={() => setLevelSwept(true)} />
+                  </div>
+                )}
 
-                {/* Displacement Tracker — shows after a level is swept */}
-                <div className="mb-3 w-full max-w-xs">
-                  <DisplacementTracker
-                    active={levelSwept}
-                    onConfirm={() => setDisplacementConfirmed(true)}
-                  />
-                </div>
+                {/* Displacement Tracker — hidden in compact mode */}
+                {!compactMode && (
+                  <div className="mb-3 w-full max-w-xs">
+                    <DisplacementTracker
+                      active={levelSwept}
+                      onConfirm={() => setDisplacementConfirmed(true)}
+                    />
+                  </div>
+                )}
 
                 <DisciplineWheel
                   rules={rules}

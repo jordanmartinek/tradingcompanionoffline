@@ -191,6 +191,12 @@ export function startNotificationScheduler(rules = []) {
       const reminder = generateRuleReminder(rules);
       sendNotification('Rule Reminder', reminder, 'rule_reminder');
     }
+
+    // Weekend review prompt (Saturday at 10:00 AM)
+    const day = now.getDay();
+    if (day === 6 && h === 10 && m === 0) {
+      sendNotification('Weekly Review', 'Time to review your week. Open the app to see your stats and patterns.', 'weekend_review');
+    }
   }, 60000); // Check every minute
 
   timers.push(checkInterval);
